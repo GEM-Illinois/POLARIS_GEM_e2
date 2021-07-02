@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node pkg="rviz" type="rviz" name="rviz" args="" required="true" />
+
+  <include file="$(find platform_launch)/launch/$(env platform_name)/visualization_sensors.launch" />
+  
+</launch>

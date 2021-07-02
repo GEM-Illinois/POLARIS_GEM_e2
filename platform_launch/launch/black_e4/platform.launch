@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="use_dbw" default="false" />
+  <arg name="use_gps" default="false" />
+  <arg name="use_front_radar" default="false" />
+  <arg name="use_camera" default="false" />
+  <arg name="use_lidar1" default="false" />
+  <arg name="use_ssc" default="false" />
+
+  <arg name="veh_frame" default="base_link" />
+  <arg name="front_radar_frame" default="front_radar" />
+  <arg name="lidar1_frame" default="lidar1" />
+
+  <arg name="ssc_namespace" default="ssc" />
+
+  <node pkg="tf" type="static_transform_publisher" name="$(arg veh_frame)_to_$(arg front_radar_frame)" args="0 0 0 0 0 0 $(arg veh_frame) $(arg front_radar_frame) 50" if="$(arg use_front_radar)" />
+
+  <node pkg="tf" type="static_transform_publisher" name="$(arg veh_frame)_to_$(arg lidar1_frame)" args="0.5 1.6 0 -1.57 0 0 $(arg veh_frame) $(arg lidar1_frame) 50" if="$(arg use_lidar1)" />
+
+  <include file="$(find platform_launch)/launch/core/all_supported_drivers.launch">
+    <arg name="use_pacmod" value="$(arg use_dbw)" />
+    <arg name="use_novatel" value="$(arg use_gps)" />
+    <arg name="use_esr_can" value="$(arg use_front_radar)" />
+    <arg name="use_hdl32_1" value="$(arg use_lidar1)" />
+
+    <arg name="hdl32_1_frame" value="$(arg lidar1_frame)" />
+    <arg name="hdl32_1_ip" value="192.168.1.201" />
+    <arg name="hdl32_1_port" value="2368" />
+
+    <arg name="esr_can_frame" value="$(arg front_radar_frame)" />
+    <arg name="esr_can_hardware_id" value="10241" />
+    <arg name="esr_can_circuit_id" value="1" />
+    <arg name="esr_can_viz_mature_tracks_only" value="true" />
+
+    <arg name="novatel_imu_rate" value="100" />
+    <arg name="novatel_imu_sample_rate" value="150" />
+    <arg name="novatel_ip" value="192.168.74.10" />
+    <arg name="novatel_port" value="2000" />
+    <!--arg name="novatel_port" value="3003" /-->
+
+    <arg name="pacmod_hardware_id" value="10241" />
+    <arg name="pacmod_circuit_id" value="0" />
+  </include>
+
+  <include file="$(find ssc_pm_gem_e4)/launch/speed_steering_control.launch" if="$(arg use_ssc)">
+    <arg name="namespace" value="$(arg ssc_namespace)" />
+  </include>
+</launch>

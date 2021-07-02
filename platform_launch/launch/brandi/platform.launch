@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="use_dbw" default="false" />
+  <arg name="use_gps" default="false" />
+  <arg name="use_ssc" default="false" />
+
+  <arg name="veh_frame" default="base_link" />
+  <arg name="gps_frame" default="gps" />
+  <arg name="imu_frame" default="imu" />
+
+  <arg name="ssc_namespace" default="ssc" />
+
+  <node pkg="tf" type="static_transform_publisher" name="$(arg veh_frame)_to_$(arg imu_frame)"
+    args="0 0 0 0 0 0 $(arg veh_frame) $(arg imu_frame) 100" if="$(arg use_gps)"/>
+
+  <include file="$(find platform_launch)/launch/core/all_supported_drivers.launch">
+    <arg name="use_pacmod3" value="$(arg use_dbw)" />
+    <arg name="use_novatel" value="$(arg use_gps)" />
+
+    <arg name="pacmod3_hardware_id" value="43029" />
+    <arg name="pacmod3_circuit_id" value="0" />
+    <arg name="pacmod3_vehicle_type" value="LEXUS_RX_450H" />
+
+    <arg name="novatel_frame" value="$(arg gps_frame)" />
+    <arg name="novatel_imu_frame" value="$(arg imu_frame)" />
+    <arg name="novatel_imu_rate" value="100" />
+    <arg name="novatel_imu_sample_rate" value="150" />
+    <arg name="novatel_ip" value="192.168.74.10" />
+    <arg name="novatel_port" value="2000" />
+  </include>
+
+  <include file="$(find ssc_pm_lexus)/launch/speed_steering_control.launch" if="$(arg use_ssc)">
+    <arg name="namespace" value="$(arg ssc_namespace)" />
+  </include>
+</launch>
