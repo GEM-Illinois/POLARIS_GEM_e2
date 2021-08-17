@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Sensor settings -->
+  <arg name="robot_name" default="gem"/>
+
+  <!-- Vehicle settings -->
+  <group ns="$(arg robot_name)"> 
+  
+    <node name="gem_sensor_info_$(arg robot_name)" pkg="gem_gazebo" type="gem_sensor_info.py" />
+    
+    <node name="odom_$(arg robot_name)" pkg="gem_gazebo" type="gem_odom.py" output="screen" />
+
+  </group> 
+   
+</launch>
+
+
+
+
+

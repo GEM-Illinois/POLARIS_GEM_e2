@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="robot" default="/"/>
+  <arg name="velodyne_points" default="false"/>
+  <arg name="laser_points" default="false"/>
+
+  <group ns="$(arg robot)">
+
+    <!-- robot_description is used by nodes that publish to joint_states. -->
+    <param name="robot_description" 
+           command="$(find xacro)/xacro '$(find gem_description)/urdf/gem.urdf.xacro' velodyne_points:='$(arg velodyne_points)' laser_points:='$(arg laser_points)' "/>
+    
+  </group>
+
+</launch>
