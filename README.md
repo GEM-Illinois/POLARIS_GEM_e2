@@ -22,3 +22,7 @@ $ roslaunch gem_gazebo gem_gazebo_rviz.launch world_name:="highbay_track.world" 
   
 $ source devel/setup.bash  
 $ roslaunch gem_gazebo gem_sensor_info.launch
+
+<a href="url"><img src="./images/highbay_rviz.png" width="600"></a>  
+
+<a href="url"><img src="./images/highbay_gazebo.png" width="600"></a>  
