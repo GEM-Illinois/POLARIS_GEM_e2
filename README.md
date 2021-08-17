@@ -11,6 +11,9 @@ This simulator was initially developed with ROS Melodic and Gazebo 9 in Ubuntu 1
 $ source devel/setup.bash  
 $ roslaunch gem_gazebo gem_gazebo_rviz.launch velodyne_points:="true"
 
+<a href="url"><img src="./images/simple_track_rviz.png" width="600"></a>  
+
+<a href="url"><img src="./images/simple_track_gazebo.png" width="600"></a>  
 
 #### Highbay Environment
 
