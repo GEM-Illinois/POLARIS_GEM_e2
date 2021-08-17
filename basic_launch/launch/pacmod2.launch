@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-  <include file="$(find platform_launch)/launch/$(env platform_name)/platform.launch">
-    <arg name="use_dbw" value="true" />
-    <arg name="use_ssc" value="false" />
-    <arg name="use_gps" value="true" />
-  </include>
-</launch>

@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <node name="gem_vision" pkg="gem_vision" type="gem_vision.py">
-    </node>
-</launch>

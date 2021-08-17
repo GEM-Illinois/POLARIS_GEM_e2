@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-  <include file="$(find platform_launch)/launch/white_e2/platform.launch">
-    <arg name="use_front_radar" value="true" />
-    <arg name="use_camera" value="true" />
-    <arg name="use_lidar1" value="true" />
-  </include>
-</launch>

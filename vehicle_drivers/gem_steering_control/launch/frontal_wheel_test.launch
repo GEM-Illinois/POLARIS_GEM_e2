@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-
-  <node name="steer_angle_test" pkg="gem_steering_control" type="steering_wheel_test.py" />
-
-  <node name="front_angle_test" pkg="gem_steering_control" type="frontal_wheel_test.py" />
-
-</launch>
-
