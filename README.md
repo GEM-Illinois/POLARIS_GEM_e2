@@ -1,6 +1,8 @@
 # Polaris GEM e2 Simulator
 
-This simulator was initially developed with ROS Melodic and Gazebo 9 in Ubuntu 18.04 for personal research in Fall 2019. The Polaris GEM e2 vehicle was measured and modeled by Hang Cui and Jiaming Zhang using Solidworks. The compatible URDF files of simulator for RViz and Gazebo were constructed by Hang Cui. Later, this project was funded by the [Center for Autonomy](https://autonomy.illinois.edu/) at University of Illinois at Urbana-Champaign. It was further developed and merged into ROS Noetic and Gazebo 11 in Summer 2021. This simulator is currently under development for research and teaching at University of Illinois at Urbana-Champaign.
+This repository provides a simulated vehicle model of [Polaris GEM e2 Electric Cart](https://gem.polaris.com/en-us/e2/) in the [Gazebo](http://gazebosim.org/) simulation environment as well as [ROS](https://www.ros.org/) based sensors and controllers for autonomous-driving. The Polaris GEM e2 vehicle model was measured and modeled using Solidworks by Hang Cui and Jiaming Zhang. Hang Cui further constructed the URDF files of the vehicle model compatible with ROS, RViz, and Gazebo.
+
+The simulator was initially developed for personal research with ROS Melodic and Gazebo 9 in Ubuntu 18.04 in Fall 2019. This simulator then became an essential teaching material for the course, [Principles of Safe Autonomy @ Illinois](https://publish.illinois.edu/safe-autonomy/), and the project subsequently received funding from the [Center for Autonomy](https://autonomy.illinois.edu/) at University of Illinois at Urbana-Champaign. Hang Cui further developed and upgraded the simulator to use ROS Noetic and Gazebo 11 in Summer 2021. This simulator is currently under active development for research and teaching.
 
 
 ## Requirements
@@ -32,7 +34,7 @@ $ sudo apt install ros-noetic-ackermann-msgs ros-noetic-geometry2 \
 
 ## Compile Polaris GEM e2 Simulator
 
-TODO
+Coming soon...
 
 ## Usage
 
@@ -86,6 +88,10 @@ $ roslaunch gem_gazebo gem_sensor_info.launch
 <a href="url"><img src="./images/highbay_rviz.png" width="600"></a>
 
 <a href="url"><img src="./images/highbay_gazebo.png" width="600"></a>
+
+## Modules
+
+Coming soon...
 
 ## Developers:
 + Hang Cui <hangcui1201@gmail.com>
