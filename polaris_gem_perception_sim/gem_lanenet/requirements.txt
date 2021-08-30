@@ -1,0 +1,8 @@
+tensorflow>=2.2.0
+tensorflow-gpu>=2.2.0
+matplotlib
+numpy
+PyYAML
+scikit-learn==0.24.1
+rospy
+git+https://github.com/GEM-Illinois/lanenet-lane-detection.git#egg=lanenet
