@@ -28,3 +28,15 @@ As of Aug. 30, 2021, the following files are included:
 
 ## Demo
 
+Use the following ROS launch script to start up Gazebo simulation and
+a ROS node using LaneNet to process camera images and detect lane markings.
+```bash
+source devel/setup.bash
+roslaunch gem_lanenet demo_lane_detection.launch use_gpu:=true 
+```
+The argument `use_gpu:=true` is optional. You can specify `use_gpu:=false` to use CPU or TensorFlow 2 instead.
+
+This will start Gazebo simulation in a **paused** state.
+Unpause the simulation once the initialization messages are done.
+Check the rviz for the annotated image with estimated lane curvature, offset,
+and the region between fitted lane edge curves.
