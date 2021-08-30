@@ -10,6 +10,7 @@
   <arg name="debug" default="false"/>
   <arg name="verbose" default="false"/>
   <arg name="world_name" default="simple_track_green.world"/>
+  <arg name="use_rviz" default="true"/>
 
   <!-- Launch Gazebo -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -77,7 +78,7 @@
     
     <node name="gem_cmdvel_$(arg robot_name)" pkg="gem_gazebo" type="gem_cmdvel.py" />
     
-    <node name="rviz_$(arg robot_name)" pkg="rviz" type="rviz" args="-d $(find gem_description)/config_rviz/gem_gazebo_rviz.rviz" />
+    <node if="$(arg use_rviz)" name="rviz_$(arg robot_name)" pkg="rviz" type="rviz" args="-d $(find gem_description)/config_rviz/gem_gazebo_rviz.rviz" />
 
       
   </group> 
