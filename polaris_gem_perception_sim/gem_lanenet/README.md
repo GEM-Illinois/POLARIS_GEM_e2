@@ -47,3 +47,5 @@ and observe the behavior of the lane detection result from LaneNet.
 source devel/setup.bash
 rosrun gem_pure_pursuit_sim pure_pursuit_sim.py
 ```
+
+A demo video is available at https://drive.google.com/file/d/1pqA2Z7z9lszptnTtkZlI2waJsMKwNKCf/view?usp=sharing
