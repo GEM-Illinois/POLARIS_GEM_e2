@@ -428,27 +428,16 @@
     </sensor>
   </gazebo>
 
+  <!-- Sensor providing ground truth Odometry of base_link -->
+  <gazebo>
+     <plugin name="ground_truth" filename="libgazebo_ros_p3d.so">
+        <updateRate>30.0</updateRate>
+        <!-- <robotNamespace>$(arg namespace)</robotNamespace> -->
+        <frameName>/world</frameName>  <!-- Frame of reference is the global coordinates -->
+        <bodyName>base_link</bodyName>
+        <topicName>base_link/odom</topicName>
+     </plugin>
+  </gazebo>
 
 </robot>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
