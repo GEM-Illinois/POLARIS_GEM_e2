@@ -1,0 +1,21 @@
+<package>
+  <name>gem_lane_detect_msgs</name>
+  <version>0.0.1</version>
+  <description>
+    Common ROS messages for different lane detection modules in GEM project.
+  </description>
+  <maintainer email="chsieh16@illinois.edu">Chiao Hsieh</maintainer>
+  <license>NCSA</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>message_generation</build_depend>
+  <build_depend>std_msgs</build_depend>
+
+  <run_depend>message_runtime</run_depend>
+  <run_depend>std_msgs</run_depend>
+  
+  <export>
+    <architecture_independent/>
+  </export>
+</package>
