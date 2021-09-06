@@ -81,7 +81,7 @@ class LaneDetectMock:
         # Use shortest_angular_distance to normalized the angular difference in [-pi, pi]
         msg.lane.yaw_err = shortest_angular_distance(self._vehicle_state.yaw, target_seg_yaw)
         msg.lane.offset = offset
-        msg.lane.curvature = 0.0
+        msg.lane.curvature = np.nan  # TODO estimate curvature from nearby waypoints
         self._pub_lane.publish(msg)
 
 
