@@ -44,7 +44,8 @@ class StanleyLaneCentering:
         ef = self._lane.offset
         delta = theta_e + math.atan2(self.K * ef, f_vel)
 
-        rospy.loginfo("Forward velocity %g, Cross track Error: %g, Heading Error: %g" % (f_vel, ef, theta_e))
+        rospy.logdebug("Forward velocity %g m/s, Cross track Error: %g m, Heading Error: %g deg" %
+                       (f_vel, ef, math.degrees(theta_e)))
 
         ackermann_msg = AckermannDrive()
         ackermann_msg.speed = self.DESIRED_F_VEL
