@@ -23,12 +23,10 @@ def quaternion_to_euler(quat: Quaternion) -> Tuple[float, float, float]:
     return yaw, pitch, roll
 
 
-def closest_waypoint_idx(wp_arr: np.ndarray, pos: np.ndarray) -> int:
-    assert pos.shape[0] == 1 and pos.shape[1] == 2
-    assert wp_arr.shape[1] == 2
-    pos_vec = np.asarray(pos)
+def closest_waypoint_idx(ref_pos_arr: np.ndarray, pos_vec: np.ndarray) -> int:
+    assert ref_pos_arr.shape[1] == 2
     # Equivalent to [(x-pos[0])**2 + (y-pos[1])**2 for x, y in wp_arr]
-    dist_sq_arr = np.sum((wp_arr - pos_vec)**2, axis=1)
+    dist_sq_arr = np.sum((ref_pos_arr - pos_vec) ** 2, axis=1)
     return int(np.argmin(dist_sq_arr))
 
 
@@ -62,17 +60,19 @@ class LaneDetectMock:
         front_axle_y = self._vehicle_state.y + self.WHEEL_BASE*np.sin(self._vehicle_state.yaw)
 
         front_axle_pos = np.array([front_axle_x, front_axle_y])
-        target_pos_idx = closest_waypoint_idx(self._ref_wp_arr, front_axle_pos)
-        curr_target_pos = self._ref_wp_arr[target_pos_idx]
-        next_target_pos = self._ref_wp_arr[(target_pos_idx + 1) % len(self._ref_wp_arr)]
+        # Use only x and y dimensions provided in the waypoints for now.
+        ref_pos_arr = self._ref_wp_arr[:, 0:2]
+        target_pos_idx = closest_waypoint_idx(ref_pos_arr, front_axle_pos)
+        curr_target_pos = ref_pos_arr[target_pos_idx]
+        next_target_pos = ref_pos_arr[(target_pos_idx + 1) % len(ref_pos_arr)]
 
-        # Use current and next waypoints to approximate the tangent line and calculate target yaw
+        # Use current and next positions to approximate the tangent line and calculate target yaw
         vec_curr_to_next = next_target_pos - curr_target_pos
         target_seg_yaw = np.arctan2(vec_curr_to_next[1], vec_curr_to_next[0])
 
         # Offset is the (signed) distance from the front axle to the tangent line.
-        # We use the projection onto the orthogonal vector of the tengent vector (aka vector rejection)
-        vec_curr_to_next_rot90 = np.dot(np.array([[0.0, -1.0], [1.0, 0.0]]), vec_front_to_curr)
+        # We use the projection onto the orthogonal vector of the tangent vector (aka vector rejection)
+        vec_curr_to_next_rot90 = np.dot(np.array([[0.0, -1.0], [1.0, 0.0]]), vec_curr_to_next)
         vec_front_to_curr = curr_target_pos - front_axle_pos
         offset = np.dot(vec_front_to_curr, vec_curr_to_next_rot90) / norm(vec_curr_to_next)
 
@@ -88,7 +88,7 @@ class LaneDetectMock:
 def main():
     rospy.init_node("lane_detect_mock", anonymous=True)
 
-    ref_wps_file = rospy.get_param("ref_wps_file")
+    ref_wps_file = rospy.get_param("~ref_wps_file")
 
     pub_lane = rospy.Publisher("estimated_lane", SimpleLaneStamped, queue_size=1)
 
