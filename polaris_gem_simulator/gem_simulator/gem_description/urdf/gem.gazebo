@@ -434,8 +434,8 @@
         <updateRate>30.0</updateRate>
         <!-- <robotNamespace>$(arg namespace)</robotNamespace> -->
         <frameName>/world</frameName>  <!-- Frame of reference is the global coordinates -->
-        <bodyName>base_link</bodyName>
-        <topicName>base_link/odom</topicName>
+        <bodyName>base_footprint</bodyName>
+        <topicName>base_footprint/odom</topicName>
      </plugin>
   </gazebo>
 

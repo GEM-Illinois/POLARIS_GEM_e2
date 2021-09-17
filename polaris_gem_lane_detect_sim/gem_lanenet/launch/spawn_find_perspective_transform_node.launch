@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- robot_name as a constant -->
+    <arg name="robot_name" default="gem"/>
+    <arg name="use_rviz" default="true"/>
+    <group ns="$(arg robot_name)">
+        <node pkg="gem_lanenet" type="gem_odom_tf2_broadcaster.py" name="odom_tf2_broadcaster" output="screen">
+            <param name="robot_name" value="$(arg robot_name)" />
+        </node>
+
+        <remap from="image_raw" to="front_single_camera/image_raw"/>
+        <remap from="camera_info" to="front_single_camera/camera_info"/>
+        <node pkg="gem_lanenet" type="find_perspective_transform.py" name="finder" output="screen" />
+        <node if="$(arg use_rviz)" name="rviz_$(arg robot_name)" pkg="rviz" type="rviz"
+              args="-d $(find gem_lanenet)/rviz/gem_lanenet_rviz.rviz" />
+    </group>
+</launch>

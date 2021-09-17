@@ -9,7 +9,7 @@
   <arg name="headless" default="false"/>
   <arg name="debug" default="false"/>
   <arg name="verbose" default="false"/>
-  <arg name="world_name" default="simple_track_green.world"/>
+  <arg name="world_name" default="$(find gem_gazebo)/worlds/simple_track_green.world"/>
   <arg name="use_rviz" default="true"/>
 
   <!-- Launch Gazebo -->
@@ -20,7 +20,7 @@
     <arg name="headless" value="$(arg headless)"/>
     <arg name="debug" value="$(arg debug)"/>
     <arg name="verbose" value="$(arg verbose)"/>
-    <arg name="world_name" value="$(find gem_gazebo)/worlds/$(arg world_name)"/>
+    <arg name="world_name" value="$(arg world_name)"/>
   </include> 
 
   <!-- Vehicle pose -->
@@ -50,7 +50,7 @@
     
     <!-- Load joint controller configurations from YAML file to parameter server -->
     <rosparam file="$(find gem_gazebo)/config/gem_joint_control_params.yaml" command="load" ns="/$(arg robot_name)"/>
-    <param name="tf_prefix" value="$(arg robot_name)"/> 
+    <!-- <param name="tf_prefix" value="$(arg robot_name)"/> -->
 
     <!-- Load the joint controllers. One of these publishes the joint states to joint_states. -->
     <node name="controller_spawner_$(arg robot_name)" pkg="controller_manager" type="spawner" respawn="false" output="screen" ns="/$(arg robot_name)"
