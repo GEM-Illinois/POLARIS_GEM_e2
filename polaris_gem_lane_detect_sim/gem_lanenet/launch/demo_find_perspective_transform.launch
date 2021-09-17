@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- robot_name as a constant -->
+    <arg name="robot_name" value="gem"/>
+    <!-- Gazebo settings-->
+    <arg name="gui" default="false"/>
+    <arg name="paused" default="false"/>
+    <arg name="world_name" default="$(find gem_gazebo)/worlds/road_w_markers.world"/>
+
+    <arg name="use_rviz" default="true"/>
+
+    <include file="$(find gem_gazebo)/launch/gem_gazebo_rviz.launch">
+        <arg name="robot_name" value="$(arg robot_name)" />
+        <arg name="gui" value="$(arg gui)"/>
+        <arg name="paused" value="$(arg paused)"/>
+        <arg name="world_name" value="$(arg world_name)"/>
+        <arg name="x" default="0.0"/>
+        <arg name="y" default="1.83"/>
+        <arg name="use_rviz" value="false"/>  <!--Disable rviz because we are loading our own rviz settings-->
+    </include>
+</launch>
