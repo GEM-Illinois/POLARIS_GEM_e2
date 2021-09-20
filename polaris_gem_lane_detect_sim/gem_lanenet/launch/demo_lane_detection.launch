@@ -9,6 +9,7 @@
     <!-- LaneNet node settings -->
     <arg name="use_gpu" default="true"/>
     <arg name="use_rviz" default="true"/>
+    <arg name="debug" default="true"/>
 
     <include file="$(find gem_gazebo)/launch/gem_gazebo_rviz.launch">
         <arg name="robot_name" value="$(arg robot_name)" />
@@ -25,6 +26,7 @@
         <remap from="image_raw" to="front_single_camera/image_raw"/>
         <include file="$(find gem_lanenet)/launch/spawn_lanenet_node.launch">
             <arg name="use_gpu" value="$(arg use_gpu)" />
+            <arg name="debug" value="$(arg debug)" />
         </include>
 
         <node if="$(arg use_rviz)" name="rviz_$(arg robot_name)" pkg="rviz" type="rviz"
