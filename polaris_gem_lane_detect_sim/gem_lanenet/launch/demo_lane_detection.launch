@@ -5,6 +5,7 @@
 
     <!-- Gazebo settings-->
     <arg name="paused" default="true"/>
+    <arg name="gui" default="true"/>
     <!-- LaneNet node settings -->
     <arg name="use_gpu" default="true"/>
     <arg name="use_rviz" default="true"/>
@@ -12,6 +13,7 @@
     <include file="$(find gem_gazebo)/launch/gem_gazebo_rviz.launch">
         <arg name="robot_name" value="$(arg robot_name)" />
         <arg name="paused" value="$(arg paused)"/>
+        <arg name="gui" value="$(arg gui)"/>
         <arg name="use_rviz" value="false"/>  <!--Disable rviz because we are loading our own rviz settings-->
     </include>
 

@@ -3,7 +3,7 @@
     <arg name="config_path" default="$(find gem_lanenet)/configs/conf_polaris_gem.lanenet.yaml"/>
     <arg name="weights_path" default="$(find gem_lanenet)/lanenet_weights/tusimple_lanenet.ckpt"/>
     <arg name="use_gpu" default="true"/>
-    <arg name="debug" default="true"/>
+    <arg name="debug" default="false"/>
 
     <node pkg="gem_lanenet" type="lanenet_node.py" name="lanenet_node" output="screen">
         <param name="config_path" type="str" value="$(arg config_path)" />
