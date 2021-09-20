@@ -30,7 +30,7 @@ class LaneNetLaneDetector:
 
             lane_stamped_msg = SimpleLaneStamped()
             lane_stamped_msg.header.stamp = rospy.Time.now()
-            lane_stamped_msg.header.frame_id = "base_link"  # TODO
+            lane_stamped_msg.header.frame_id = "base_footprint"
             lane_stamped_msg.lane.yaw_err = yaw_err
             lane_stamped_msg.lane.offset = offset
             lane_stamped_msg.lane.curvature = curvature
