@@ -37,7 +37,7 @@ class LaneNetLaneDetector:
             # calculate error w.r.t the chosen frame of reference of the vehicle (ego view).
             # NOTE coefficients are in the order of y = c[0] + c[1]*x (+ ... + c[n]*x^n)
             # where x-axis is the forward direction of the ego vehicle
-            yaw_err = np.arctan(-center_line.convert().coef[1])
+            yaw_err = np.arctan(center_line.convert().coef[1])
 
             # Calculate the offset as the distance from the chosen frame to lane center line
             if self._frame_id in ["base_footprint", "base_link"]:
@@ -61,6 +61,8 @@ class LaneNetLaneDetector:
             lane_stamped_msg.lane.yaw_err = yaw_err
             lane_stamped_msg.lane.offset = offset
             lane_stamped_msg.lane.curvature = curvature
+
+            self._pub_lane.publish(lane_stamped_msg)
 
             if self._pub_annotated_img is not None:
                 label_str = 'Heading error: %.1f deg' % np.rad2deg(yaw_err)

@@ -2,12 +2,14 @@
 <launch>
     <arg name="config_path" default="$(find gem_lanenet)/configs/conf_polaris_gem.lanenet.yaml"/>
     <arg name="weights_path" default="$(find gem_lanenet)/lanenet_weights/tusimple_lanenet.ckpt"/>
+    <arg name="frame_id" default="base_footprint"/>
     <arg name="use_gpu" default="true"/>
     <arg name="debug" default="false"/>
 
     <node pkg="gem_lanenet" type="lanenet_node.py" name="lanenet_node" output="screen">
         <param name="config_path" type="str" value="$(arg config_path)" />
         <param name="weights_path" type="str" value="$(arg weights_path)" />
+        <param name="frame_id" type="str" value="$(arg frame_id)" />
         <param name="use_gpu" type="bool" value="$(arg use_gpu)" />
         <param name="debug" type="bool" value="$(arg debug)" />
     </node>
