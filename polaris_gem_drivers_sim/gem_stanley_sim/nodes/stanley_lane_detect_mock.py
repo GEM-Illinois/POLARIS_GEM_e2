@@ -37,13 +37,11 @@ class LaneDetectMock:
         self._pub_lane = pub_lane
         self._ref_wp_arr = ref_wp_arr
 
-        self._vehicle_state = None
-
     def odom_msg_cb(self, msg: Odometry) -> None:
         yaw, _, _ = quaternion_to_euler(msg.pose.pose.orientation)
         # This callback is called by the subscriber thread,
         # so we use a tuple to update all fields atomically.
-        self._vehicle_state = VehicleState2D(
+        vehicle_state = VehicleState2D(
             x=msg.pose.pose.position.x,
             y=msg.pose.pose.position.y,
             yaw=yaw,
@@ -51,13 +49,8 @@ class LaneDetectMock:
             vy=msg.twist.twist.linear.y,
         )
 
-    def loop_body(self) -> None:
-        if self._vehicle_state is None:
-            rospy.logdebug("First vehicle state is not received yet.")
-            return
-
-        front_axle_x = self._vehicle_state.x + self.WHEEL_BASE*np.cos(self._vehicle_state.yaw)
-        front_axle_y = self._vehicle_state.y + self.WHEEL_BASE*np.sin(self._vehicle_state.yaw)
+        front_axle_x = vehicle_state.x + self.WHEEL_BASE*np.cos(vehicle_state.yaw)
+        front_axle_y = vehicle_state.y + self.WHEEL_BASE*np.sin(vehicle_state.yaw)
 
         front_axle_pos = np.array([front_axle_x, front_axle_y])
         # Use only x and y dimensions provided in the waypoints for now.
@@ -78,8 +71,9 @@ class LaneDetectMock:
 
         msg = SimpleLaneStamped()
         msg.header.stamp = rospy.Time.now()
+        msg.header.frame_id = "front_wheel_axle"
         # Use shortest_angular_distance to normalized the angular difference in [-pi, pi]
-        msg.lane.yaw_err = shortest_angular_distance(self._vehicle_state.yaw, target_seg_yaw)
+        msg.lane.yaw_err = shortest_angular_distance(vehicle_state.yaw, target_seg_yaw)
         msg.lane.offset = offset
         msg.lane.curvature = np.nan  # TODO estimate curvature from nearby waypoints
         self._pub_lane.publish(msg)
@@ -98,10 +92,7 @@ def main():
     _ = rospy.Subscriber("base_link/odom", Odometry, callback=lane_detect.odom_msg_cb, queue_size=1)
 
     try:
-        rate = rospy.Rate(hz=20)
-        while not rospy.is_shutdown():
-            rate.sleep()
-            lane_detect.loop_body()
+        rospy.spin()
     except KeyboardInterrupt:
         rospy.loginfo("Shutting down Lane Detect Mock node")
 
