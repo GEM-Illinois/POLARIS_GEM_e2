@@ -12,7 +12,7 @@ from gem_lanenet.line_fit import Line
 WARPED_IMG_W = 16*61  # pixels
 WARPED_IMG_H = 9*61  # pixels
 WARPED_IMG_SIZE = (WARPED_IMG_W, WARPED_IMG_H)
-METER_PER_PIXEL = 0.03 # each pixel is about 0.03 m in the warped image
+METER_PER_PIXEL = 0.03  # each pixel is about 0.03 m in the warped image
 
 SRC_DST_MAP = {
     (412, 329): (426, 60),
@@ -313,7 +313,24 @@ class LaneNetWLineFit:
         mask = cv2.resize(mask, WARPED_IMG_SIZE, interpolation=cv2.INTER_LINEAR)
         return mask, lane_chords
 
-    def detect(self, src_img) -> Tuple[float, float, float, np.ndarray]:
+    def detect(self, src_img) -> Tuple[Polynomial, np.ndarray]:
+        """ Detect and return lane edges
+
+        Parameters
+        ----------
+        src_img
+            Image from camera
+
+        Returns
+        -------
+        center_line_base_footprint
+            A polynomial representing the detected lane center line w.r.t the base_footprint.
+            Note that by convention, x-axis is the forward direction and y-axis is to the left
+            w.r.t ego vehicle for the resulting center line.
+        debug_image:
+            An annotated image for debugging.
+            If self._debug is False, only the binary bird's eye view is returned.
+        """
         src_img_size = (src_img.shape[1], src_img.shape[0])
 
         binary_seg_result, instance_seg_result = self._lanenet_pipeline(src_img)
@@ -326,27 +343,25 @@ class LaneNetWLineFit:
         # Note that v is the x-axis for fitting to follow the right hand rule
         # TODO fit both lanes to two parallel curves instead of fitting curves separately
         u_arr, v_arr = left_lane_pixels.T
-        left_line = Polynomial.fit(v_arr, u_arr, deg=1,
-                                   domain=[0, WARPED_IMG_H], window=[0, WARPED_IMG_H])  # type: Polynomial
+        left_line = Polynomial.fit(v_arr, u_arr, deg=1)  # type: Polynomial
         u_arr, v_arr = right_lane_pixels.T
-        right_line = Polynomial.fit(v_arr, u_arr, deg=1,
-                                    domain=[0, WARPED_IMG_H], window=[0, WARPED_IMG_H])  # type: Polynomial
+        right_line = Polynomial.fit(v_arr, u_arr, deg=1)  # type: Polynomial
         center_line = (left_line + right_line) / 2
 
-        # calculate error w.r.t center line first
-        # NOTE coefficients are in the order of u = c[0] + c[1]*v (+ ... + c[n]*v^n)
-        heading_err = np.arctan(-center_line.coef[1])
-        # base_footprint is assumed at (WARPED_IMG_W//2, WARPED_IMG_H) pixel
-        u_diff = WARPED_IMG_W//2 - center_line(WARPED_IMG_H)
-        distance_err = u_diff * np.cos(heading_err) * METER_PER_PIXEL
-
-        # convert error w.r.t the base_footprint of the vehicle (ego view).
-        yaw_err = -heading_err
-        offset = -distance_err
-        curvature = 0.0  # Using line hence the curvature is 0
+        c0, c1 = center_line.convert().coef[:2]
+        # Transform the line with
+        #  x = -METER_PER_PIXEL*v
+        #  y = -METER_PER_PIXEL*(u - WARPED_IMG_W//2)
+        #  where x-axis points toward vehicle's forward direction and y-axis to the left
+        # Given u = c0 + c1*v, the transformed line is:
+        #  y = METER_PER_PIXEL*(WARPED_IMG_W//2 - c0) + c1*x
+        c0_p = METER_PER_PIXEL*(WARPED_IMG_W//2 - c0)
+        c1_p = c1
+        center_line_base_footprint = Polynomial([c0_p, c1_p])
+        rospy.loginfo_once("Center line: %s" % str(center_line_base_footprint))
 
         if not self._debug:
-            return yaw_err, offset, curvature, binary_birdeye_img
+            return center_line_base_footprint, binary_birdeye_img
         # else:  # For DEBUGGING
         # TODO Check unwarped image is close to binary_seg_result
         colored_birdeye_img = cv2.cvtColor(binary_birdeye_img, cv2.COLOR_GRAY2RGB)
@@ -365,7 +380,6 @@ class LaneNetWLineFit:
         left_u_arr = left_line(v_arr).astype(np.int32)
         left_poly_line = np.vstack((left_u_arr, v_arr), ).T
 
-        rospy.loginfo_once("Center line: %s" % str(center_line))
         center_u_arr = center_line(v_arr).astype(np.int32)
         center_poly_line = np.vstack((center_u_arr, v_arr), ).T
 
@@ -376,11 +390,6 @@ class LaneNetWLineFit:
         colored_unwarped_img = cv2.warpPerspective(colored_birdeye_img, self.M_INV, src_img_size,
                                                    flags=cv2.INTER_LINEAR)
         layered_image = cv2.addWeighted(src_img, 1, colored_unwarped_img, 0.5, 0)
-        label_str = 'Heading error: %.1f deg' % np.rad2deg(heading_err)
-        layered_image = cv2.putText(layered_image, label_str, (30, 40), 0, 1, (255, 255, 255), 2, cv2.LINE_AA)
-
-        label_str = 'Lane center offset from vehicle: %.1f m' % distance_err
-        layered_image = cv2.putText(layered_image, label_str, (30, 70), 0, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
         # crop margin to aligned the size
         # base_footprint should map from (WARPED_IMG_W/2, WARPED_IMG_H) to (src_w/2, src_h)
@@ -392,7 +401,7 @@ class LaneNetWLineFit:
 
         # Build final image for debugging
         debug_image = np.vstack((cropped_birdeye_img, layered_image))
-        return heading_err, distance_err, curvature, debug_image
+        return center_line_base_footprint, debug_image
 
     def close(self) -> None:
         self._sess.close()  # TODO add support for `with` statement using context manager
