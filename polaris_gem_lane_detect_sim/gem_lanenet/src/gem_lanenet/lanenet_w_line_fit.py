@@ -345,17 +345,20 @@ class LaneNetWLineFit:
         u_arr, v_arr = left_lane_pixels.T
         left_line = Polynomial.fit(v_arr, u_arr, deg=1)  # type: Polynomial
         u_arr, v_arr = right_lane_pixels.T
-        right_line = Polynomial.fit(v_arr, u_arr, deg=1)  # type: Polynomial
+        right_line = Polynomial.fit(v_arr, u_arr, deg=1, domain=left_line.domain)  # type: Polynomial
         center_line = (left_line + right_line) / 2
+
+        u_diff = center_line(WARPED_IMG_H) - WARPED_IMG_W//2
+        rospy.logdebug("Pixel diff in u-axis %f" % u_diff)
 
         c0, c1 = center_line.convert().coef[:2]
         # Transform the line with
-        #  x = -METER_PER_PIXEL*v
+        #  x = -METER_PER_PIXEL*(v - WARPED_IMG_H)
         #  y = -METER_PER_PIXEL*(u - WARPED_IMG_W//2)
         #  where x-axis points toward vehicle's forward direction and y-axis to the left
         # Given u = c0 + c1*v, the transformed line is:
-        #  y = METER_PER_PIXEL*(WARPED_IMG_W//2 - c0) + c1*x
-        c0_p = METER_PER_PIXEL*(WARPED_IMG_W//2 - c0)
+        #  y = METER_PER_PIXEL*(WARPED_IMG_W//2 - (c0 + c1*WARPED_IMG_H)) + c1*x
+        c0_p = METER_PER_PIXEL*(WARPED_IMG_W//2 - (c0 + c1*WARPED_IMG_H))
         c1_p = c1
         center_line_base_footprint = Polynomial([c0_p, c1_p])
         rospy.loginfo_once("Center line: %s" % str(center_line_base_footprint))
