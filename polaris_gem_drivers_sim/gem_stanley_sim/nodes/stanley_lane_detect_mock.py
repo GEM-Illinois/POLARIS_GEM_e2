@@ -89,7 +89,7 @@ def main():
     ref_wp_arr = np.genfromtxt(ref_wps_file, delimiter=',')
     lane_detect = LaneDetectMock(pub_lane=pub_lane, ref_wp_arr=ref_wp_arr)
 
-    _ = rospy.Subscriber("base_link/odom", Odometry, callback=lane_detect.odom_msg_cb, queue_size=1)
+    _ = rospy.Subscriber("base_footprint/odom", Odometry, callback=lane_detect.odom_msg_cb, queue_size=1)
 
     try:
         rospy.spin()
