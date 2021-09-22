@@ -16,6 +16,7 @@ SimpleLaneRepr = NamedTuple(
 
 
 class StanleyLaneCentering:
+    WHEEL_BASE = 1.75  # meter
     DESIRED_F_VEL = 2.8  # m/s
     K = 0.45
 
@@ -29,9 +30,13 @@ class StanleyLaneCentering:
         # This callback is called by the subscriber thread,
         # so we use a tuple to update all fields atomically.
         # TODO store and use timestamp?
-        self._lane = SimpleLaneRepr(yaw_err=msg.lane.yaw_err,
-                                    offset=msg.lane.offset,
-                                    curvature=msg.lane.curvature)
+
+        if msg.header.frame_id == "front_wheel_axle":
+            self._lane = SimpleLaneRepr(yaw_err=msg.lane.yaw_err,
+                                        offset=msg.lane.offset,
+                                        curvature=msg.lane.curvature)
+        else:
+            rospy.logwarn("Skipping lane information w.r.t unsupported frame %s." % msg.header.frame_id)
 
     def odom_msg_cb(self, msg: Odometry) -> None:
         x_vel = msg.twist.twist.linear.x
@@ -68,7 +73,7 @@ def main():
     # Register callback function
     _ = rospy.Subscriber("estimated_lane", SimpleLaneStamped,
                          callback=lane_centering.lane_msg_cb, queue_size=1)
-    _ = rospy.Subscriber("base_link/odom", Odometry, callback=lane_centering.odom_msg_cb, queue_size=1)
+    _ = rospy.Subscriber("base_footprint/odom", Odometry, callback=lane_centering.odom_msg_cb, queue_size=1)
 
     try:
         rate = rospy.Rate(hz=20)
