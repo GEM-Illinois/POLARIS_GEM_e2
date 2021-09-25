@@ -45,7 +45,7 @@ class LaneNetLaneDetector:
                 y_diff = center_line(0.0) - 0.0
             elif self._frame_id == "front_wheel_axle":
                 # front_wheel_axle is assumed at (WHEEL_BASE, 0.0) in meters.
-                y_diff = center_line(0.0) - self.WHEEL_BASE
+                y_diff = center_line(self.WHEEL_BASE) - 0.0
             else:
                 rospy.logwarn(
                     "Unsupported frame_id %s for computing cross track error. " % self._frame_id
