@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, Sequence, Tuple
 
 import cv2
 import numpy as np
@@ -12,6 +12,13 @@ WARPED_IMG_W = 16*61  # pixels
 WARPED_IMG_H = 9*61  # pixels
 WARPED_IMG_SIZE = (WARPED_IMG_W, WARPED_IMG_H)
 METER_PER_PIXEL = 0.03  # each pixel is about 0.03 m in the warped image
+
+COLOR_DICT = {
+    0: (0, 255, 0),
+    1: (0, 255, 255),
+    2: (240, 248, 255),
+    3: (227, 207, 87),
+}
 
 SRC_DST_MAP = {
     (412, 329): (426, 60),
@@ -191,6 +198,38 @@ def _find_current_lane_pixels(binary_birdeye_img) -> Tuple[np.ndarray, np.ndarra
     return left_lane_pixels, right_lane_pixels
 
 
+def _find_all_lanes_pixels(binary_birdeye_img,
+                           min_h: int = WARPED_IMG_H//9,
+                           min_pixels: int = WARPED_IMG_W//24) -> Tuple[np.ndarray, ...]:
+    num_labels, labeled_img, stats, centroids = \
+        cv2.connectedComponentsWithStats(binary_birdeye_img, connectivity=8, ltype=cv2.CV_16U)
+
+    ret = []
+    for label in range(1, num_labels):
+        # Exclude components with too small height or area
+        if stats[label, cv2.CC_STAT_HEIGHT] < min_h \
+                or stats[label, cv2.CC_STAT_AREA] < min_pixels:
+            continue
+        v_arr, u_arr = np.nonzero(labeled_img == label)
+        pixels = np.vstack((u_arr, v_arr)).transpose()
+        ret.append(pixels)
+    return tuple(ret)
+
+
+def _convert_poly_pixel_to_pos(line: Polynomial) -> Polynomial:
+    c0, c1 = line.convert().coef[:2]
+    # Transform the line with
+    #  x = -METER_PER_PIXEL*(v - WARPED_IMG_H)
+    #  y = -METER_PER_PIXEL*(u - WARPED_IMG_W//2)
+    #  where x-axis points toward vehicle's forward direction and y-axis to the left
+    # Given u = c0 + c1*v, the transformed line is:
+    #  y = METER_PER_PIXEL*(WARPED_IMG_W//2 - (c0 + c1*WARPED_IMG_H)) + c1*x
+    c0_p = METER_PER_PIXEL * (WARPED_IMG_W // 2 - (c0 + c1 * WARPED_IMG_H))
+    c1_p = c1
+    line_base_footprint = Polynomial([c0_p, c1_p])
+    return line_base_footprint
+
+
 class LaneNetWLineFit:
     M, M_INV = get_perspective_transform(SRC_DST_MAP)
 
@@ -260,7 +299,7 @@ class LaneNetWLineFit:
         labels = connect_components_analysis_ret[1]
         stats = connect_components_analysis_ret[2]
         for index, stat in enumerate(stats):
-            if stat[4] <= min_area_threshold:
+            if stat[cv2.CC_STAT_AREA] <= min_area_threshold:
                 idx = np.where(labels == index)
                 morphological_ret[idx] = 0
 
@@ -312,7 +351,7 @@ class LaneNetWLineFit:
         mask = cv2.resize(mask, WARPED_IMG_SIZE, interpolation=cv2.INTER_LINEAR)
         return mask, lane_chords
 
-    def detect(self, src_img) -> Tuple[Polynomial, np.ndarray]:
+    def detect(self, src_img) -> Tuple[Sequence[Polynomial], np.ndarray]:
         """ Detect and return lane edges
 
         Parameters
@@ -322,8 +361,9 @@ class LaneNetWLineFit:
 
         Returns
         -------
-        center_line_base_footprint
-            A polynomial representing the detected lane center line w.r.t the base_footprint.
+        line_sequence
+            A sequence of polynomials representing the detected lane edges w.r.t the base_footprint.
+            It may include edges of multiple lanes or no lane at all.
             Note that by convention, x-axis is the forward direction and y-axis is to the left
             w.r.t ego vehicle for the resulting center line.
         debug_image:
@@ -336,32 +376,20 @@ class LaneNetWLineFit:
 
         binary_birdeye_img = self._birdeye_view(binary_seg_result, src_img_size)
 
-        left_lane_pixels, right_lane_pixels = _find_current_lane_pixels(binary_birdeye_img)
+        edge_pixels_seq = _find_all_lanes_pixels(binary_birdeye_img)
+        edge_line_seq = []
+        for lane_pixels in edge_pixels_seq:
+            # Fit a second order polynomial curve to the pixel coordinates for each lane edge
+            # Note that v is the x-axis for fitting to follow the right hand rule
+            # TODO fit all lanes to parallel curves instead of fitting curves separately
+            u_arr, v_arr = lane_pixels.T
+            edge_line = Polynomial.fit(v_arr, u_arr, deg=1, domain=[0, WARPED_IMG_H])  # type: Polynomial
+            edge_line_seq.append(edge_line)
 
-        # Fit a second order polynomial curve to the pixel coordinates for both lanes
-        # Note that v is the x-axis for fitting to follow the right hand rule
-        # TODO fit both lanes to two parallel curves instead of fitting curves separately
-        u_arr, v_arr = left_lane_pixels.T
-        left_line = Polynomial.fit(v_arr, u_arr, deg=1)  # type: Polynomial
-        u_arr, v_arr = right_lane_pixels.T
-        right_line = Polynomial.fit(v_arr, u_arr, deg=1, domain=left_line.domain)  # type: Polynomial
-        center_line = (left_line + right_line) / 2
-
-        u_diff = center_line(WARPED_IMG_H) - WARPED_IMG_W//2
-
-        c0, c1 = center_line.convert().coef[:2]
-        # Transform the line with
-        #  x = -METER_PER_PIXEL*(v - WARPED_IMG_H)
-        #  y = -METER_PER_PIXEL*(u - WARPED_IMG_W//2)
-        #  where x-axis points toward vehicle's forward direction and y-axis to the left
-        # Given u = c0 + c1*v, the transformed line is:
-        #  y = METER_PER_PIXEL*(WARPED_IMG_W//2 - (c0 + c1*WARPED_IMG_H)) + c1*x
-        c0_p = METER_PER_PIXEL*(WARPED_IMG_W//2 - (c0 + c1*WARPED_IMG_H))
-        c1_p = c1
-        center_line_base_footprint = Polynomial([c0_p, c1_p])
+        ret = [_convert_poly_pixel_to_pos(el) for el in edge_line_seq]
 
         if not self._debug:
-            return center_line_base_footprint, binary_birdeye_img
+            return ret, binary_birdeye_img
         # else:  # For DEBUGGING
         # TODO Check unwarped image is close to binary_seg_result
         colored_birdeye_img = cv2.cvtColor(binary_birdeye_img, cv2.COLOR_GRAY2RGB)
@@ -371,21 +399,19 @@ class LaneNetWLineFit:
                  pt1=(WARPED_IMG_W//2, 0), pt2=(WARPED_IMG_W//2, WARPED_IMG_H),
                  color=(127, 127, 127), thickness=5)
 
-        # Plot pixels used for line fitting
-        for u, v in left_lane_pixels:
-            colored_birdeye_img[v, u] = np.array([127, 255, 127])
-        for u, v in right_lane_pixels:
-            colored_birdeye_img[v, u] = np.array([255, 127, 127])
+        # Fill detected pixels
+        for i, lane_pixels in enumerate(edge_pixels_seq):
+            for u, v in lane_pixels:
+                colored_birdeye_img[v, u] = np.array(COLOR_DICT.get(i, COLOR_DICT[0]))
+
         v_arr = np.arange(WARPED_IMG_H, dtype=np.int32)
-        left_u_arr = left_line(v_arr).astype(np.int32)
-        left_poly_line = np.vstack((left_u_arr, v_arr), ).T
+        poly_line_seq = []
+        for edge_line in edge_line_seq:
+            u_arr = edge_line(v_arr).astype(np.int32)
+            poly_line = np.vstack((u_arr, v_arr), ).T
+            poly_line_seq.append(poly_line)
 
-        center_u_arr = center_line(v_arr).astype(np.int32)
-        center_poly_line = np.vstack((center_u_arr, v_arr), ).T
-
-        right_u_arr = right_line(v_arr).astype(np.int32)
-        right_poly_line = np.vstack((right_u_arr, v_arr)).T
-        cv2.polylines(colored_birdeye_img, [left_poly_line, center_poly_line, right_poly_line], False,
+        cv2.polylines(colored_birdeye_img, poly_line_seq, False,
                       color=(0, 0, 255), thickness=5)
         colored_unwarped_img = cv2.warpPerspective(colored_birdeye_img, self.M_INV, src_img_size,
                                                    flags=cv2.INTER_LINEAR)
@@ -401,7 +427,7 @@ class LaneNetWLineFit:
 
         # Build final image for debugging
         debug_image = np.vstack((cropped_birdeye_img, layered_image))
-        return center_line_base_footprint, debug_image
+        return ret, debug_image
 
     def close(self) -> None:
         self._sess.close()  # TODO add support for `with` statement using context manager
