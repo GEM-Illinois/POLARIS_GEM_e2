@@ -16,6 +16,7 @@ from gem_lanenet.lanenet_w_line_fit import LaneNetWLineFit
 
 class LaneNetLaneDetector:
     WHEEL_BASE = 1.75  # meter
+    LOOKAHEAD_X = 8.0  # meter
 
     def __init__(self, nnet: LaneNetWLineFit,
                  frame_id: str,
@@ -36,9 +37,13 @@ class LaneNetLaneDetector:
 
             left_line, right_line = None, None
             left_line_y_diff, right_line_y_diff = -np.inf, np.inf
-            # Extrapolate the edge line and calculate the difference to base_footprint
+            # Extrapolate the edge line and find two lanes closest to the lookahead point (LOOKAHEAD_X, 0.0)
             for edge_line in line_seq:
-                y_diff = edge_line(0.0) - 0.0
+                yaw_err = np.arctan(edge_line.convert().coef[1])
+                if abs(yaw_err) > np.pi / 4:
+                    continue  # Ignore lines with too large yaw error
+
+                y_diff = edge_line(self.LOOKAHEAD_X) - 0.0
                 if left_line_y_diff < y_diff < 0:
                     left_line = edge_line
                     left_line_y_diff = y_diff
