@@ -29,6 +29,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>cv_bridge</depend>
+  <depend>gem_lane_detect_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>image_geometry</depend>>
   <depend>opencv3</depend>
