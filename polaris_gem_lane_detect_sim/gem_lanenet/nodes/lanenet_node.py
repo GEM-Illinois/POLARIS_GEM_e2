@@ -33,32 +33,10 @@ class LaneNetLaneDetector:
     def img_callback(self, data: Image) -> None:
         try:
             cv_image = self._bridge.imgmsg_to_cv2(data, "bgr8")
-            line_seq, annotated_image = self._nnet.detect(cv_image)
+            center_line, annotated_image = self._nnet.detect(cv_image)
 
-            left_line, right_line = None, None
-            left_line_y_diff, right_line_y_diff = -np.inf, np.inf
-            # Extrapolate the edge line and find two lanes closest to the lookahead point (LOOKAHEAD_X, 0.0)
-            for edge_line in line_seq:
-                yaw_err = np.arctan(edge_line.convert().coef[1])
-                if abs(yaw_err) > np.pi / 4:
-                    continue  # Ignore lines with too large yaw error
-
-                y_diff = edge_line(self.LOOKAHEAD_X) - 0.0
-                if left_line_y_diff < y_diff < 0:
-                    left_line = edge_line
-                    left_line_y_diff = y_diff
-                elif 0 < y_diff < right_line_y_diff:
-                    right_line = edge_line
-                    right_line_y_diff = y_diff
-                elif y_diff == 0:
-                    # TODO raise warning
-                    continue
-
-            if left_line is None or right_line is None:
-                # TODO handle error when detected lanes < 2
-                rospy.logwarn("Skipping an image message since cannot detect two lane edges in the image.")
-                return
-            center_line = (left_line + right_line) / 2
+            if center_line is None:
+                rospy.logwarn("Cannot infer the lane center line in the current image. Skip.")
 
             # calculate error w.r.t the chosen frame of reference of the vehicle (ego view).
             # NOTE coefficients are in the order of y = c[0] + c[1]*x (+ ... + c[n]*x^n)

@@ -1,4 +1,4 @@
-from typing import Dict, Sequence, Tuple
+from typing import Dict, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -11,6 +11,7 @@ from gem_lanenet.line_fit import Line
 WARPED_IMG_W = 16*61  # pixels
 WARPED_IMG_H = 9*61  # pixels
 WARPED_IMG_SIZE = (WARPED_IMG_W, WARPED_IMG_H)
+LOOKAHEAD_PIXELS = WARPED_IMG_H // 2
 METER_PER_PIXEL = 0.03  # each pixel is about 0.03 m in the warped image
 
 COLOR_DICT = {
@@ -351,7 +352,7 @@ class LaneNetWLineFit:
         mask = cv2.resize(mask, WARPED_IMG_SIZE, interpolation=cv2.INTER_LINEAR)
         return mask, lane_chords
 
-    def detect(self, src_img) -> Tuple[Sequence[Polynomial], np.ndarray]:
+    def detect(self, src_img) -> Tuple[Optional[Polynomial], np.ndarray]:
         """ Detect and return lane edges
 
         Parameters
@@ -386,10 +387,33 @@ class LaneNetWLineFit:
             edge_line = Polynomial.fit(v_arr, u_arr, deg=1, domain=[0, WARPED_IMG_H])  # type: Polynomial
             edge_line_seq.append(edge_line)
 
-        ret = [_convert_poly_pixel_to_pos(el) for el in edge_line_seq]
+        left_line, right_line = None, None
+        left_line_u_diff, right_line_u_diff = -WARPED_IMG_W//2, WARPED_IMG_W//2
+        # Extrapolate the edge line and find two lanes closest to the lookahead point (W//2, H//2)
+        for edge_line in edge_line_seq:
+            yaw_err = np.arctan(edge_line.convert().coef[1])
+            if abs(yaw_err) > np.pi / 4:
+                continue  # Ignore lines with too large yaw error
+
+            u_diff = edge_line(WARPED_IMG_H//2) - WARPED_IMG_W//2
+            if left_line_u_diff < u_diff < 0:
+                left_line = edge_line
+                left_line_u_diff = u_diff
+            elif 0 < u_diff < right_line_u_diff:
+                right_line = edge_line
+                right_line_u_diff = u_diff
+            elif u_diff == 0:
+                # TODO raise warning
+                continue
+
+        if left_line is None or right_line is None:
+            center_line = None
+        else:
+            center_line_pixel = (left_line + right_line) / 2
+            center_line = _convert_poly_pixel_to_pos(center_line_pixel)
 
         if not self._debug:
-            return ret, binary_birdeye_img
+            return center_line, binary_birdeye_img
         # else:  # For DEBUGGING
         # TODO Check unwarped image is close to binary_seg_result
         colored_birdeye_img = cv2.cvtColor(binary_birdeye_img, cv2.COLOR_GRAY2RGB)
@@ -427,7 +451,7 @@ class LaneNetWLineFit:
 
         # Build final image for debugging
         debug_image = np.vstack((cropped_birdeye_img, layered_image))
-        return ret, debug_image
+        return center_line, debug_image
 
     def close(self) -> None:
         self._sess.close()  # TODO add support for `with` statement using context manager
