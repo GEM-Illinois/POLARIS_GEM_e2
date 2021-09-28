@@ -37,6 +37,10 @@ class LaneNetLaneDetector:
 
             if center_line is None:
                 rospy.logwarn("Cannot infer the lane center line in the current image. Skip.")
+                if self._pub_annotated_img is not None:
+                    annotated_image_msg = self._bridge.cv2_to_imgmsg(annotated_image, '8UC3')
+                    self._pub_annotated_img.publish(annotated_image_msg)
+                return
 
             # calculate error w.r.t the chosen frame of reference of the vehicle (ego view).
             # NOTE coefficients are in the order of y = c[0] + c[1]*x (+ ... + c[n]*x^n)
