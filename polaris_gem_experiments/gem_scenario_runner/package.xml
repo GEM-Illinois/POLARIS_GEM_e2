@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package>
+     <name>gem_scenario_runner</name>
+     <version>1.0.0</version>
+     <description>
+         This package provides launch scripts for integration and runs with
+         different combinations of GEM components and simulation worlds.
+     </description>
+
+     <author>Chiao Hsieh</author>
+     <maintainer email="chsieh16@illinois.edu" />
+     <license>NCSA</license>
+
+     <!-- Use buildtool_depend for build tool packages: -->
+     <buildtool_depend>catkin</buildtool_depend>
+
+     <!-- Use run_depend for packages you need at runtime: -->
+     <run_depend>gem_gazebo</run_depend>
+     <run_depend>gem_lanenet</run_depend>
+     <run_depend>rospy</run_depend>
+     <run_depend>rviz</run_depend>
+</package>
