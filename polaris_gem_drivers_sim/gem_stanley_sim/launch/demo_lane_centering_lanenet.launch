@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- robot_name as a constant -->
+    <arg name="robot_name" value="gem"/>
+    <!-- Gazebo settings-->
+    <arg name="paused" default="true"/>
+    <!-- RViz setting -->
+    <arg name="use_rviz" default="true"/>
+
+    <!-- File for waypoints to mock the detected lane -->
+    <arg name="ref_wps_file" default="$(find gem_stanley_sim)/waypoints/wps.csv" />
+
+    <include file="$(find gem_gazebo)/launch/gem_gazebo_rviz.launch">
+        <arg name="robot_name" value="$(arg robot_name)" />
+        <arg name="paused" value="$(arg paused)"/>
+        <arg name="use_rviz" value="false"/>  <!--Disable rviz because we are loading our own rviz settings-->
+    </include>
+    <group ns="$(arg robot_name)">
+        <node name="lane_centering" pkg="gem_stanley_sim" type="stanley_lane_centering.py" required="true"
+              output="screen"/>
+        <node if="$(arg use_rviz)" name="rviz_$(arg robot_name)" pkg="rviz" type="rviz"
+              args="-d $(find gem_lanenet)/rviz/gem_lanenet_rviz.rviz" />
+
+        <remap from="image_raw" to="front_single_camera/image_raw"/>
+        <include file="$(find gem_lanenet)/launch/spawn_lanenet_node.launch">
+            <arg name="frame_id" value="front_wheel_axle" />
+            <arg name="use_gpu" value="true" />
+            <arg name="debug" value="true" />
+        </include>
+    </group>
+</launch>
