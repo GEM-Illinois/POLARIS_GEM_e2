@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- robot_name as a constant -->
+    <arg name="robot_name" value="gem"/>
+    <!-- Gazebo settings-->
+    <arg name="paused" default="true"/>
+
+    <!-- File for waypoints to mock the detected lane -->
+    <arg name="ref_wps_file" default="$(find gem_pure_pursuit_sim)/waypoints/wps.csv" />
+
+    <include file="$(find gem_gazebo)/launch/gem_gazebo_rviz.launch">
+        <arg name="robot_name" value="$(arg robot_name)" />
+        <arg name="paused" value="$(arg paused)"/>
+        <arg name="use_rviz" value="false"/>  <!--Disable rviz because we are loading our own rviz settings-->
+    </include>
+    <group ns="$(arg robot_name)">
+        <node name="lane_detect" pkg="gem_pure_pursuit_sim" type="pure_pursuit_lane_detect_mock.py" required="true"
+              output="screen">
+            <!-- Load waypoints from file -->
+            <param name="ref_wps_file" value="$(arg ref_wps_file)" />
+        </node>
+        <node name="lane_centering" pkg="gem_pure_pursuit_sim" type="pure_pursuit_lane_centering.py" required="true"
+              output="screen"/>
+    </group>
+</launch>
