@@ -48,6 +48,10 @@ class StanleyLaneCentering:
         theta_e = self._lane.yaw_err
         ef = self._lane.offset
         delta = theta_e + math.atan2(self.K * ef, f_vel)
+        if delta > 0.61:
+            delta = 0.61
+        elif delta < -0.61:
+            delta = -0.61
 
         rospy.logdebug("Forward velocity %g m/s, Cross track Error: %g m, Heading Error: %g deg" %
                        (f_vel, ef, math.degrees(theta_e)))
