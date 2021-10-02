@@ -1,6 +1,6 @@
 #include <assert.h>
 
-#include "stanley_lane_centering.h"
+#include "lane_centering_stanley.h"
 
 #define HALF_LANE_W ((ApproxReal) 0.38)
 
