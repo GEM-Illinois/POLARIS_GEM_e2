@@ -42,7 +42,7 @@ def shutdown():
  
 def listener():
     rospy.init_node('waypoints_logger', anonymous=True)
-    rospy.Subscriber('/gem/odom', Odometry, save_waypoint)
+    rospy.Subscriber('/gem/base_footprint/odom', Odometry, save_waypoint)
     rospy.spin()
 
 if __name__ == '__main__':
