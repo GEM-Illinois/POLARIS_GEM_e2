@@ -34,7 +34,21 @@ $ sudo apt install ros-noetic-ackermann-msgs ros-noetic-geometry2 \
 
 ## Compile Polaris GEM e2 Simulator
 
-Coming soon...
+We assume the Catkin workspace is under `~/gem_ws`. We first clone this repository to `~/gem_ws/src`.
+For example,
+```bash
+$ mkdir -p ~/gem_ws/src
+$ cd ~/gem_ws/src
+$ git clone https://github.com/GEM-Illinois/POLARIS_GEM_e2.git
+```
+
+Then we compile the whole workspace use `catkin_make`
+```bash
+$ source /opt/ros/noetic/setup.bash
+$ cd ~/gem_ws
+$ catkin_make
+```
+For more detail about Catkin workspac, please refer to the tutorialsat http://wiki.ros.org/catkin/Tutorials/create_a_workspace.
 
 ## Usage
 
