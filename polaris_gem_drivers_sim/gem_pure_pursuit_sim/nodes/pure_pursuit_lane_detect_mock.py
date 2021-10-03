@@ -54,13 +54,9 @@ class LaneDetectMock:
         self._ref_pos_arr = ref_wp_arr[:, 0:2]
         self._curvature_arr = compute_curvature(self._ref_pos_arr)
 
-        self._vehicle_state = None
-
     def odom_msg_cb(self, msg: Odometry) -> None:
         yaw, _, _ = quaternion_to_euler(msg.pose.pose.orientation)
-        # This callback is called by the subscriber thread,
-        # so we use a tuple to update all fields atomically.
-        self._vehicle_state = VehicleState2D(
+        vehicle_state = VehicleState2D(
             x=msg.pose.pose.position.x,
             y=msg.pose.pose.position.y,
             yaw=yaw,
@@ -68,12 +64,7 @@ class LaneDetectMock:
             vy=msg.twist.twist.linear.y,
         )
 
-    def loop_body(self) -> None:
-        if self._vehicle_state is None:
-            rospy.logdebug("First vehicle state is not received yet.")
-            return
-
-        rear_axle_pos = np.array([self._vehicle_state.x, self._vehicle_state.y])
+        rear_axle_pos = np.array([vehicle_state.x, vehicle_state.y])
         # Use only x and y dimensions provided in the waypoints for now.
         target_pos_idx = closest_waypoint_idx(self._ref_pos_arr, rear_axle_pos)
         curr_target_pos = self._ref_pos_arr[target_pos_idx]
@@ -93,7 +84,7 @@ class LaneDetectMock:
         msg.header.stamp = rospy.Time.now()
         msg.header.frame_id = "rear_wheel_axle"
         # Use shortest_angular_distance to normalized the angular difference in [-pi, pi]
-        msg.lane.yaw_err = shortest_angular_distance(self._vehicle_state.yaw, target_seg_yaw)
+        msg.lane.yaw_err = shortest_angular_distance(vehicle_state.yaw, target_seg_yaw)
         msg.lane.offset = offset
         msg.lane.curvature = self._curvature_arr[target_pos_idx]
         assert -np.pi <= msg.lane.yaw_err <= np.pi
@@ -114,10 +105,7 @@ def main():
     _ = rospy.Subscriber("base_footprint/odom", Odometry, callback=lane_detect.odom_msg_cb, queue_size=1)
 
     try:
-        rate = rospy.Rate(hz=20)
-        while not rospy.is_shutdown():
-            rate.sleep()
-            lane_detect.loop_body()
+        rospy.spin()
     except KeyboardInterrupt:
         rospy.loginfo("Shutting down Pure Pursuit Lane Detect Mock node")
 
