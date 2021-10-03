@@ -48,7 +48,7 @@ $ source /opt/ros/noetic/setup.bash
 $ cd ~/gem_ws
 $ catkin_make
 ```
-For more detail about Catkin workspac, please refer to the tutorialsat http://wiki.ros.org/catkin/Tutorials/create_a_workspace.
+For more detail about Catkin workspace, please refer to the tutorials at http://wiki.ros.org/catkin/Tutorials/create_a_workspace.
 
 ## Usage
 
