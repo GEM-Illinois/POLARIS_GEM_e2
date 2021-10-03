@@ -9,9 +9,7 @@
   
     <node name="gem_sensor_info_$(arg robot_name)" pkg="gem_gazebo" type="gem_sensor_info.py" />
     
-    <node name="odom_$(arg robot_name)" pkg="gem_gazebo" type="gem_odom.py" output="screen" />
-
-  </group> 
+  </group>
    
 </launch>
 
