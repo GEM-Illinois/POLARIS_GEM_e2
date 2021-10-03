@@ -1,53 +1,5 @@
 <sdf version='1.6'>
   <world name='default'>
-    <model name='ground_plane'>
-      <static>1</static>
-      <link name='link'>
-        <collision name='collision'>
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-          <surface>
-            <contact>
-              <collide_bitmask>65535</collide_bitmask>
-              <ode/>
-            </contact>
-            <friction>
-              <ode>
-                <mu>100</mu>
-                <mu2>50</mu2>
-              </ode>
-              <torsional>
-                <ode/>
-              </torsional>
-            </friction>
-            <bounce/>
-          </surface>
-          <max_contacts>10</max_contacts>
-        </collision>
-        <visual name='visual'>
-          <cast_shadows>0</cast_shadows>
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-          <material>
-            <script>
-              <uri>file://media/materials/scripts/gazebo.material</uri>
-              <name>Gazebo/Grey</name>
-            </script>
-          </material>
-        </visual>
-        <self_collide>0</self_collide>
-        <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
-      </link>
-    </model>
     <light name='sun' type='directional'>
       <cast_shadows>1</cast_shadows>
       <pose frame=''>0 0 10 0 -0 0</pose>
@@ -66,17 +18,11 @@
         <falloff>0</falloff>
       </spot>
     </light>
-    <road name='road_0'>
-      <width>3</width>
-      <point>-20 1.84 0.01</point>
-      <point>20 1.84 0.01</point>
-    </road>
     <gravity>0 0 -9.8</gravity>
     <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
     <atmosphere type='adiabatic'/>
     <physics name='default_physics' default='0' type='ode'>
       <max_step_size>0.001</max_step_size>
-      <real_time_factor>1</real_time_factor>
       <real_time_update_rate>1000</real_time_update_rate>
     </physics>
     <scene>
@@ -92,95 +38,6 @@
       <elevation>0</elevation>
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
-    <state world_name='default'>
-      <sim_time>2437 238000000</sim_time>
-      <real_time>1233 727051530</real_time>
-      <wall_time>1626219245 44380026</wall_time>
-      <iterations>1215787</iterations>
-      <model name='(DS) Curved Road - 100m'>
-        <pose frame=''>102.73 45.035 0 0 -0 0</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose frame=''>102.73 45.035 0 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='(DS) Curved Road - 100m_0'>
-        <pose frame=''>102.735 150.5 0 0 -0 1.5707</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose frame=''>102.735 150.5 0 0 -0 1.5707</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='(DS) Curved Road - 100m_1'>
-        <pose frame=''>-102.74 150.526 0 0 -0 3.1415</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose frame=''>-102.74 150.526 0 0 -0 3.1415</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='(DS) Curved Road - 100m_2'>
-        <pose frame=''>-102.732 45.03 0 0 0 -1.5707</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose frame=''>-102.732 45.03 0 0 0 -1.5707</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='(DS) Straight Road - 100m'>
-        <pose frame=''>0 8 0 0 -0 0</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose frame=''>0 8 0 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='(DS) Straight Road - 100m_0'>
-        <pose frame=''>0 187.55 0 0 -0 3.1415</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose frame=''>0 187.55 0 0 -0 3.1415</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='grassland'>
-        <pose frame=''>0 80 -1 0 -0 0</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose frame=''>0 80 -1 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='ground_plane'>
-        <pose frame=''>0 0 -2 0 -0 0</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose frame=''>0 0 -2 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
-      <light name='sun'>
-        <pose frame=''>0 0 10 0 -0 0</pose>
-      </light>
-    </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
         <pose frame=''>-40.8098 3.59455 27.5717 0 0.559643 0.360195</pose>
@@ -240,7 +97,7 @@
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
       </link>
-      <pose frame=''>1.42088 7.87711 0 0 -0 0</pose>
+      <pose frame=''>0 8 0 0 -0 0</pose>
     </model>
     <model name='(DS) Straight Road - 100m_0'>
       <static>1</static>
@@ -294,7 +151,7 @@
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
       </link>
-      <pose frame=''>4.62178 49.4072 0 0 -0 0</pose>
+      <pose frame=''>0 187.55 0 0 -0 3.1415</pose>
     </model>
     <model name='(DS) Curved Road - 100m'>
       <static>1</static>
@@ -348,7 +205,7 @@
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
       </link>
-      <pose frame=''>109.675 43.2205 0 0 -0 0</pose>
+      <pose frame=''>102.73 45.035 0 0 -0 0</pose>
     </model>
     <model name='(DS) Curved Road - 100m_0'>
       <static>1</static>
@@ -402,7 +259,7 @@
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
       </link>
-      <pose frame=''>136.773 176.957 0 0 -0 0</pose>
+      <pose frame=''>102.735 150.5 0 0 -0 1.5707</pose>
     </model>
     <model name='(DS) Curved Road - 100m_1'>
       <static>1</static>
@@ -456,7 +313,7 @@
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
       </link>
-      <pose frame=''>-64.4744 152.092 0 0 -0 0</pose>
+      <pose frame=''>-102.74 150.526 0 0 -0 3.1415</pose>
     </model>
     <model name='(DS) Curved Road - 100m_2'>
       <static>1</static>
@@ -510,7 +367,7 @@
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
       </link>
-      <pose frame=''>-103.307 63.7276 0 0 -0 0</pose>
+      <pose frame=''>-102.732 45.03 0 0 0 -1.5707</pose>
     </model>
     <audio>
       <device>default</device>
@@ -552,9 +409,8 @@
           </geometry>
           <material>
             <script>
-              <uri>model://grassland/materials/scripts</uri>
-              <uri>model://grassland/materials/textures/</uri>
-              <name>grass/Image</name>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/Grass</name>
             </script>
           </material>
         </visual>
@@ -562,7 +418,7 @@
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
       </link>
-      <pose frame=''>9.98985 39.1248 0 0 -0 0</pose>
+      <pose frame=''>0 0 0 0 -0 0</pose>
     </model>
   </world>
 </sdf>
