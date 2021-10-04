@@ -41,24 +41,30 @@ def gen_evenly_spaced_truths(
 
 
 def main():
-    phi_min, phi_max = -np.pi/6, np.pi/6
-    cte_min, cte_max = -1.2, 1.2
-    num_truths = 100
+    num_truths = 100  # type: int
     distribution = "uniform"
-    output_file_name = "truths-%s-pi_6-1.2m-%d.yaml" % (distribution, num_truths)
+    phi_div = 12  # type: int
+    phi_max, cte_max = np.pi/phi_div, 1.2
+    phi_min, cte_min = -phi_max, -cte_max
 
     if distribution == "truncated_normal":
         truth_list = gen_truncated_normal_truths(phi_range=(phi_min, phi_max),
                                                  cte_range=(cte_min, cte_max),
                                                  num_truths=num_truths)
+        output_file_name = "%d_truths-%s-pi_%d-%.1fm.yaml" % (num_truths, distribution, phi_div, cte_max)
     elif distribution == "evenly_spaced":
+        num_phi, num_cte = 6, 6
+        assert num_phi*num_cte == num_truths
         truth_list = gen_evenly_spaced_truths(phi_range=(phi_min, phi_max),
                                               cte_range=(cte_min, cte_max),
-                                              num_phi=6, num_cte=6)
+                                              num_phi=num_phi, num_cte=num_cte)
+        output_file_name = "%d_truths-%s_%dx%d-pi_%d-%.1fm.yaml" \
+                           % (num_truths, distribution, num_phi, num_cte, phi_div, cte_max)
     elif distribution == "uniform":
         truth_list = gen_uniform_truths(phi_range=(phi_min, phi_max),
                                         cte_range=(cte_min, cte_max),
                                         num_truths=num_truths)
+        output_file_name = "%d_truths-%s-pi_%d-%.1fm.yaml" % (num_truths, distribution, phi_div, cte_max)
     else:
         raise NotImplementedError("Unsupported probability distribution %s" % distribution)
 
