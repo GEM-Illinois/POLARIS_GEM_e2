@@ -8,8 +8,8 @@ import yaml
 
 StampedLane = NamedTuple("StampedLane", [('stamp', float), ('heading', float), ('distance', float)])
 STAMP_THRES = 50.0  # milli-second
-HEADING_THRES = 10 ** -4
-DISTANCE_THRES = 10 ** -4
+HEADING_THRES = 10 ** -3
+DISTANCE_THRES = 10 ** -3
 
 
 def is_close(l1: Tuple[float, float], l2: Tuple[float, float]) -> bool:
@@ -83,6 +83,10 @@ def main(argv: Any) -> None:
 
     # Filter those truths without enough samples
     truth_samples = [entry for entry in truth_samples if len(entry[1]) > 10]
+
+    # Filter NaN
+    truth_samples = [(t, [s for s in raw_samples if not any(math.isnan(field) for field in s)])
+                     for t, raw_samples in truth_samples]
 
     for truth, samples in truth_samples:
         print("Ground truth: %s; #Samples: %d" % (str(truth), len(samples)))
