@@ -128,17 +128,12 @@
             </link>
         </model>
 
-        <road name="Lanes_4">
-            <width>20</width>
-            <point>0 32.5 0.01</point>
-            <point>100 32.5 0.01</point>
-            <material>
-                <script>
-                    <uri>file://media/materials/scripts/gazebo.material</uri>
-                    <name>Gazebo/Lanes_4</name>
-                </script>
-            </material>
-        </road>
+        <include>
+            <name>cloverleaf_interchange</name>
+            <uri>model://cloverleaf_interchange</uri>
+            <static>1</static>
+            <pose>175 25.575 0.01 0 -0 0</pose>
+        </include>
 
         <road name="Lanes_6">
             <width>30</width>

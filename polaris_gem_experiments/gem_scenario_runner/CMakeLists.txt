@@ -7,7 +7,7 @@ find_package(catkin REQUIRED)
 catkin_package()
 
 install(PROGRAMS
-   nodes/set_pose_three_100m_straight_roads.py
+   nodes/set_scene_three_100m_straight_roads.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

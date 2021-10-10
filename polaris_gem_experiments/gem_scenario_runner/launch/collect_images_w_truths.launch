@@ -16,7 +16,7 @@
     <!-- Periodically reset Gazebo model pose -->
     <arg name="reset_pose" default="true"/>
     <arg name="reset_period" default="0.25"/>
-    <arg name="num_poses_each_truth" default="10"/>
+    <arg name="num_scenes_each_truth" default="100"/>
     <arg name="truth_file"
          default="$(find gem_scenario_runner)/configs/example-5.truths.yaml"/>
 
@@ -33,11 +33,11 @@
     </include>
 
     <group ns="$(arg robot_name)" if="$(arg reset_pose)">
-        <node name="set_model_pose" pkg="gem_scenario_runner" type="set_pose_three_100m_straight_roads.py"
+        <node name="set_model_pose" pkg="gem_scenario_runner" type="set_scene_three_100m_straight_roads.py"
               output="screen" required="true">
             <param name="gazebo_model_name" value="$(arg robot_name)"/>
             <param name="reset_period" type="double" value="$(arg reset_period)"/>
-            <param name="num_poses_each_truth" type="int" value="$(arg num_poses_each_truth)"/>
+            <param name="num_scenes_each_truth" type="int" value="$(arg num_scenes_each_truth)"/>
             <rosparam command="load" file="$(arg truth_file)"/>
         </node>
     </group>
