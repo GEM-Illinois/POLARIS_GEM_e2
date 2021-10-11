@@ -36,13 +36,13 @@ def gen_evenly_spaced_truths(
         phi_range: Tuple[float, float],
         cte_range: Tuple[float, float],
         num_phi: int, num_cte: int) -> List[List[float]]:
-    return [[phi, cte] for phi in np.linspace(phi_range[0], phi_range[1], num_phi)
+    return [[float(phi), float(cte)] for phi in np.linspace(phi_range[0], phi_range[1], num_phi)
             for cte in np.linspace(cte_range[0], cte_range[1], num_cte)]
 
 
 def main():
-    num_truths = 100  # type: int
-    distribution = "uniform"
+    num_truths = 121  # type: int
+    distribution = "evenly_spaced"
     phi_div = 12  # type: int
     phi_max, cte_max = np.pi/phi_div, 1.2
     phi_min, cte_min = -phi_max, -cte_max
@@ -53,7 +53,7 @@ def main():
                                                  num_truths=num_truths)
         output_file_name = "%d_truths-%s-pi_%d-%.1fm.yaml" % (num_truths, distribution, phi_div, cte_max)
     elif distribution == "evenly_spaced":
-        num_phi, num_cte = 6, 6
+        num_phi, num_cte = 11, 11
         assert num_phi*num_cte == num_truths
         truth_list = gen_evenly_spaced_truths(phi_range=(phi_min, phi_max),
                                               cte_range=(cte_min, cte_max),
@@ -75,3 +75,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
