@@ -70,8 +70,15 @@ class ImageToLane:
         self._frame_id = frame_id
 
         self.skip_count = 0
+        self.time_usage = 0.0
 
     def cam_img_to_lane(self, msg: CompressedImage) -> Tuple[float, float]:
+        t_begin = time.time()
+        ret = self._raw_cam_img_to_lane(msg)
+        self.time_usage += (time.time() - t_begin)
+        return ret
+
+    def _raw_cam_img_to_lane(self, msg: CompressedImage) -> Tuple[float, float]:
         """ Given camera image, run LaneNet to estimate the heading and distance """
 
         cv_image = self._bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
@@ -170,7 +177,7 @@ def main(argv: Any) -> None:
     converter = ImageToLane(
         lanenet=LaneNetWLineFit(config_path=str(config_path),
                                 weights_path=str(weights_path),
-                                debug=True))
+                                debug=False))
 
     TOPIC_TO_CB = {
         ODOM_TOPIC: odom_to_truth,
@@ -190,7 +197,8 @@ def main(argv: Any) -> None:
             pickle.dump(truth_samples_list, f)
 
     converter._lanenet.close()
-    print("Time usage: %.2f seconds" % (time.time() - begin))
+    print("Image Process Time usage: %.2f seconds" % converter.time_usage)
+    print("Total Time usage: %.2f seconds" % (time.time() - begin))
     print("Skipped %d out of %d images" % (converter.skip_count, num_imgs))
 
 
