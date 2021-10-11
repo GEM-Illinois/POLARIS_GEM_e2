@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Gazebo arguments -->
+    <arg name="gui" default="true"/>
+    <arg name="paused" default="true"/>
+
+    <!-- RViz -->
+    <arg name="use_rviz" default="false"/>
+
+    <!-- Experiment Setup -->
+    <arg name="controller" default="stanley" />
+    <arg name="num_traces" default="1000" />
+    <arg name="max_trace_len" default="100" />
+
+    <!-- LaneNet config -->
+    <arg name="config_path" default="$(find gem_lanenet)/configs/conf_polaris_gem.lanenet.yaml" />
+    <arg name="weights_path" default="$(find gem_lanenet)/lanenet_weights/tusimple_lanenet.ckpt"/>
+    <arg name="out_dir" default="/tmp/" />
+
+    <!-- Constants -->
+    <arg name="world_name"
+         value="$(find gem_scenario_runner)/worlds/three_100m_straight_roads.world"/>
+    <arg name="robot_name" value="gem"/>
+
+    <include file="$(find gem_gazebo)/launch/gem_gazebo_rviz.launch">
+        <arg name="world_name" value="$(arg world_name)"/>
+        <arg name="gui" value="$(arg gui)"/>
+        <arg name="paused" value="$(arg paused)"/>
+        <arg name="use_rviz" value="$(arg use_rviz)"/>
+    </include>
+
+    <group ns="$(arg robot_name)">
+        <node name="sim_traces" pkg="gem_scenario_runner" type="sim_trace_three_100m_straight_roads.py"
+              output="screen" required="true">
+            <param name="gazebo_model_name" value="$(arg robot_name)"/>
+            <param name="controller" value="$(arg controller)"/>
+            <param name="config_path" value="$(arg config_path)" />
+            <param name="weights_path" value="$(arg weights_path)" />
+            <param name="out_dir" value="$(arg out_dir)" />
+            <param name="num_traces" value="$(arg num_traces)" />
+            <param name="max_trace_len" value="$(arg max_trace_len)" />
+        </node>
+    </group>
+</launch>
