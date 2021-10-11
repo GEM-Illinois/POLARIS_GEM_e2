@@ -78,7 +78,7 @@ def check_ground_truth(phi: float, cte: float, pose: Pose) -> bool:
 
 def get_uniform_random_scene(phi: float, cte: float) -> LaneDetectScene:
     """ Get a poses for a given ground truth phi and cte
-    The samples are drawn first from a discreimgte choice among three lanes and
+    The samples are drawn first from a discrete choice among three lanes and
     then from a continuous uniform distribution between [LANE_START, LANE_STOP].
 
     Parameters
@@ -110,7 +110,9 @@ def get_uniform_random_scene(phi: float, cte: float) -> LaneDetectScene:
 def pose_to_truth(pose: Pose, scene: LaneDetectScene) -> Tuple[float, float]:
     heading = quat_to_yaw(pose.orientation)
     distance = (pose.position.y + HALF_LANE_WIDTH) % PLOT_SEP - HALF_LANE_WIDTH
-    return heading, distance
+    yaw_err = -heading
+    offset = -distance
+    return yaw_err, offset
 
 
 class ResetPose:
@@ -396,6 +398,15 @@ def main() -> None:
                 truth_list.append(next_truth)
                 rospy.logdebug("Next (φ*, d*) = (%f, %f)" % next_truth)
             traces.append((truth_list, perceived_list))
+
+        if frame_id == "front_wheel_axle":
+            # Since the ground truth is w.r.t base_footprint, i.e., rear axle,
+            # adjust to front axle for stanley control. Note that only offset is affected.
+            new_traces = []
+            for truth_list, perceived_list in traces:
+                new_truth_list = [(yaw_err, offset+np.sin(yaw_err)) for yaw_err, offset in truth_list]
+                new_traces.append((new_truth_list, perceived_list))
+            traces = new_traces
 
     except KeyboardInterrupt:
         rospy.loginfo("Shutting down")
