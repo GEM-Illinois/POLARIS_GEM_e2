@@ -39,13 +39,35 @@ static inline ApproxReal approx_modulo(ApproxReal y_fix16, ApproxReal x_fix16) {
   __CPROVER_postcondition(rem_fix32 == (fix32_t) rem_fix16, "lossless conversion from fix32 to fix16");
   return rem_fix16;
 }
+static inline ApproxReal approx_asin(ApproxReal x) {
+  /**
+   * For -1 <= x <= 1,
+   *     asin(x) = sum ((2n)!*x^(2n+1)) / (2^2n*(n!)^2*(2n+1))
+   *             = x + x^3/6 + 3x^5/40 + 5x^7/112 + 35x^9/1152 + ...
+   * Error is bounded by TODO
+   */
+  __CPROVER_precondition(-ONE <= x && x <= ONE, "-1 <= x <= 1");
+  ApproxReal ret = 0;
+  const ApproxReal x_sq = x*x;
+  ApproxReal x_term = x;
+  ret += x_term;
+  x_term *= x_sq;  // x^3
+  ret += x_term / 6;
+  x_term *= x_sq;  // x^5
+  ret += x_term * 3 / 40;
+  x_term *= x_sq;  // x^7
+  ret += x_term * 5 / 112;
+  x_term *= x_sq;  // x^9
+  ret += x_term * 35 / 1152;
+  return ret;
+}
 static inline ApproxReal fix16_atan_impl(ApproxReal x) {
   /**
    * Approximation of arctan using the first `n` terms of Taylor expansion.
    * For 0 <= x <= 1,
    *     atan(x) = x - x^3/3 + x^5/5 - x^7/7 + ...
    * Error is bounded by
-   *     |err(x)| <= x^(2n+1) / (2n+1)
+   *     |err| <= x^(2n+1) / (2n+1)
    */
   __CPROVER_precondition(0 <= x && x <= ONE, "0 <= x <= 1");
   const ApproxReal x_sq = x*x;
@@ -128,4 +150,13 @@ static inline ApproxReal approx_cos(ApproxReal x) {
    */
    return approx_sin(x + APPROX_PI/2);
 }
+
+static inline ApproxReal approx_tan(ApproxReal x) {
+  /**
+   * Approximation of tangent
+   *    tan(x) = TODO
+   */
+   return approx_sin(x) / approx_cos(x);
+}
+
 #endif  // APPROX_REAL_CBMC_H

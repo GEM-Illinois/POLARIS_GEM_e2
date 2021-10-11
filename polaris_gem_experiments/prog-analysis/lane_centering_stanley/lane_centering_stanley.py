@@ -3,10 +3,9 @@ from numpy import arctan2, sin, cos
 WHEEL_BASE = 1.75  # m
 
 K_P = 0.45
-FORWARD_VEL = 2.8  # m/s
-CYCLE_TIME = 0.05  # s
-STEERING_MIN = -0.61  # rad/s^2
-STEERING_MAX = 0.61  # rad/s^2
+SPEED = 2.8  # m/s
+CYCLE_SEC = 0.05  # s
+STEER_LIM = 0.61  # rad
 
 
 def sensor(state):
@@ -22,13 +21,13 @@ def sensor(state):
 def controller(epsilon):
     """ Stanley controller """
     prcv_heading, prcv_distance = epsilon
-    error = prcv_heading + arctan2(K_P*prcv_distance, FORWARD_VEL)
+    error = prcv_heading + arctan2(K_P * prcv_distance, SPEED)
 
     # Calculate controller output
-    if error > STEERING_MAX:
-        steering = STEERING_MAX
-    elif error < STEERING_MIN:
-        steering = STEERING_MIN
+    if error > STEER_LIM:
+        steering = STEER_LIM
+    elif error < -STEER_LIM:
+        steering = -STEER_LIM
     else:
         steering = error
 
@@ -45,9 +44,9 @@ def dynamics(old_state, steering):
         dyaw/dt = FORWARD_VEL*sin(steering)/WHEEL_BASE
     """
     old_x, old_y, old_yaw = old_state
-    new_x = old_x + FORWARD_VEL * cos(old_yaw + steering) * CYCLE_TIME
-    new_y = old_y + FORWARD_VEL * sin(old_yaw + steering) * CYCLE_TIME
-    new_yaw = old_yaw + FORWARD_VEL * sin(steering) / WHEEL_BASE * CYCLE_TIME
+    new_x = old_x + SPEED * cos(old_yaw + steering) * CYCLE_SEC
+    new_y = old_y + SPEED * sin(old_yaw + steering) * CYCLE_SEC
+    new_yaw = old_yaw + SPEED * sin(steering) / WHEEL_BASE * CYCLE_SEC
     return new_x, new_y, new_yaw
 
 
