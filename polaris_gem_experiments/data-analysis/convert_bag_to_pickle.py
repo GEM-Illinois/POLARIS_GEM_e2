@@ -186,7 +186,6 @@ def main(argv: Any) -> None:
     num_imgs = 0
     for file_name, truth_samples_list in file_samples_iter:
         num_imgs += len(truth_samples_list[1])
-        print(*truth_samples_list[1], sep='\n')
         with open("%s.%s-%s.pickle" % (file_name, str(sec_start).zfill(3), str(sec_stop).zfill(3)), 'wb') as f:
             pickle.dump(truth_samples_list, f)
 
