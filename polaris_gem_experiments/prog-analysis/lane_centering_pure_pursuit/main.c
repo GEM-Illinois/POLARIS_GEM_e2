@@ -1,6 +1,6 @@
 #include <assert.h>
 
-#include "lane_centering_stanley.h"
+#include "lane_centering_pure_pursuit.h"
 
 #define HALF_LANE_W ((ApproxReal) 2.0)
 
@@ -24,7 +24,11 @@ static inline State nondet_initial_state() {
 
 static inline ApproxReal lyapunov(Perception perc)
 {
-    return approx_abs(perc.phi + approx_atan2(approx_mul(K_P, perc.delta), FORWARD_SPEED));
+  ApproxReal alpha = perc.phi + approx_asin(approx_mul(perc.delta, LOOK_AHEAD_INV));
+  ApproxReal error = approx_atan(
+      approx_mul(approx_mul(2 * WHEEL_BASE, approx_sin(alpha)), LOOK_AHEAD_INV)
+  );
+  return approx_abs(error);
 }
 
 Perception nondet_approx(Perception truth) {
@@ -164,7 +168,7 @@ int main() {
   State new_state = dynamics(old_state, steering);
 
   Perception new_truth = sensor(new_state);
-
+perc.phi + approx_atan2(approx_mul(K_P, perc.delta), FORWARD_SPEED)
 #ifdef ASSERT_COUNTERACT
   assert(STEERING_MIN <= steering && steering <= STEERING_MAX);
 
