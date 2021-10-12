@@ -116,13 +116,11 @@ class ResetPose:
     This class defines the function to reset a Model to a new pose.
     """
 
-    def __init__(self, model_name: str, lanenet: LaneNetWLineFit,
-                 frame_id: str = "base_footprint"):
+    def __init__(self, model_name: str, lanenet: LaneNetWLineFit):
         self.__model_name = model_name
         self.__light_name = "sundir"
         self._bridge = cv_bridge.CvBridge()
         self._lanenet = lanenet
-        self._frame_id = frame_id
 
         self._prev_perceived = (0.0, 0.0)
 
@@ -195,17 +193,9 @@ class ResetPose:
         yaw_err = np.arctan(center_line.convert().coef[1])
 
         # Calculate the offset as the distance from the chosen frame to lane center line
-        if self._frame_id in ["base_footprint", "base_link"]:
-            # base_footprint or base_link is the origin (0.0, 0.0)
-            y_diff = center_line(0.0) - 0.0
-        elif self._frame_id == "front_wheel_axle":
-            # front_wheel_axle is assumed at (WHEEL_BASE, 0.0) in meters.
-            y_diff = center_line(WHEEL_BASE) - 0.0
-        else:
-            rospy.logwarn(
-                "Unsupported frame_id %s for computing cross track error. " % self._frame_id
-                + "Skipping.")
-            return np.nan.np.nan
+        # NOTE In this simulation set up we always assume the perception is w.r.t rear_axle
+        # base_footprint or base_link is the origin (0.0, 0.0)
+        y_diff = center_line(0.0) - 0.0
         offset = y_diff * np.cos(yaw_err)
         return yaw_err, offset
 
@@ -245,7 +235,6 @@ def gen_init_truth_arr(num_traces: int, phi_bound: Tuple[float, float], cte_boun
 def control_pure_pursuit(prcv_state: Tuple[float, float]) -> float:
     yaw_err, offset = prcv_state
     heading, distance = -yaw_err, -offset
-    # formula for calculating θ of goal point (same frame of reference as heading param)
 
     # Let β be the angle between tangent line of curve path and the line from rear axle to look ahead point
     # based on cosine rule of triangles: cos(A) = (b^2+c^2-a^2)/2bc
@@ -263,7 +252,7 @@ def control_pure_pursuit(prcv_state: Tuple[float, float]) -> float:
     return angle
 
 
-def dynamics_pure_pursuit(curr_pose: Pose, steering: float) -> Pose:
+def dynamics(curr_pose: Pose, steering: float) -> Pose:
     curr_x = curr_pose.position.x
     curr_y = curr_pose.position.y
     curr_z = curr_pose.position.z
@@ -279,31 +268,13 @@ def dynamics_pure_pursuit(curr_pose: Pose, steering: float) -> Pose:
 
 def control_stanley(prcv_state: Tuple[float, float]) -> float:
     yaw_err, offset = prcv_state
-    angle = yaw_err + np.arctan2(K_ST*offset, SPEED)
+    heading, distance = -yaw_err, -offset
+
+    # NOTE Convert to front axle assuming the lane is a line
+    distance_f = distance + np.sin(heading)
+    angle = -heading + np.arctan2(K_ST*-distance_f, SPEED)
     angle = np.clip(angle, -STEER_LIM, STEER_LIM)  # type: float  # no rounding performed
     return angle
-
-
-def dynamics_stanley(curr_pose: Pose, steering: float) -> Pose:
-    curr_x = curr_pose.position.x
-    curr_y = curr_pose.position.y
-    curr_z = curr_pose.position.z
-    curr_yaw = quat_to_yaw(curr_pose.orientation)
-
-    # Convert to front_wheel_axle
-    curr_front_x = curr_x + WHEEL_BASE * np.cos(curr_yaw)
-    curr_front_y = curr_y + WHEEL_BASE * np.sin(curr_yaw)
-
-    next_front_x = curr_front_x + SPEED * CYCLE_SEC * np.cos(curr_yaw + steering)
-    next_front_y = curr_front_y + SPEED * CYCLE_SEC * np.sin(curr_yaw + steering)
-    next_yaw = curr_yaw + SPEED * np.sin(steering) / WHEEL_BASE * CYCLE_SEC
-
-    # Convert back to rear_wheel_axle i.e. base_footprint
-    next_x = next_front_x - WHEEL_BASE * np.cos(next_yaw)
-    next_y = next_front_y - WHEEL_BASE * np.sin(next_yaw)
-
-    return Pose(position=Point(next_x, next_y, curr_z),
-                orientation=euler_to_quat(yaw=next_yaw))
 
 
 class ImageBuffer:
@@ -337,21 +308,13 @@ def main() -> None:
     num_traces = rospy.get_param("~num_traces", 5)
     max_trace_len = rospy.get_param("~max_trace_len", 50)
 
-    if controller == "stanley":
-        frame_id = "front_wheel_axle"
-    elif controller == "pure_pursuit":
-        frame_id = "base_footprint"
-    else:
-        rospy.logerr("Unknown controller name %s. Abort." % controller)
-        return
-
     img_buffer = ImageBuffer()
     _ = rospy.Subscriber('front_single_camera/image_raw', Image, img_buffer.cb)
 
     lanenet_detect = LaneNetWLineFit(
         config_path=config_path,
         weights_path=weights_path)
-    rp = ResetPose(model_name, lanenet_detect, frame_id=frame_id)
+    rp = ResetPose(model_name, lanenet_detect)
 
     init_truth_arr = gen_init_truth_arr(num_traces, (phi_min, phi_max), (cte_min, cte_max))
     rospy.sleep(0.001)  # Wait for the simulated clock to start
@@ -381,9 +344,9 @@ def main() -> None:
                 start_dynamics = time.time()
 
                 if controller == "stanley":
-                    next_pose = dynamics_stanley(curr_pose, control_stanley(prcv_state))
+                    next_pose = dynamics(curr_pose, control_stanley(prcv_state))
                 elif controller == "pure_pursuit":
-                    next_pose = dynamics_pure_pursuit(curr_pose, control_pure_pursuit(prcv_state))
+                    next_pose = dynamics(curr_pose, control_pure_pursuit(prcv_state))
                 else:
                     raise RuntimeError
 
