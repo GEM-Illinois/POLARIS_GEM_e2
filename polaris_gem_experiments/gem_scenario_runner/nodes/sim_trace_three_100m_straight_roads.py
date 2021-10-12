@@ -403,7 +403,8 @@ def main() -> None:
         out_path = pathlib.Path(out_dir)
         if out_path.is_dir():
             # Save x, y, yaw in case for sanity check
-            out_pickle_name = 'lanenet_%s_sim_traces_%s.xy_yaw.pickle' % (controller, time.strftime("%Y-%m-%d-%H-%M-%S"))
+            time_str = time.strftime("%Y-%m-%d-%H-%M-%S")
+            out_pickle_name = 'lanenet_%s_sim_traces_%s.xy_yaw.pickle' % (controller, time_str)
             out_pickle = out_path.joinpath(out_pickle_name)
             with out_pickle.open('wb') as f:
                 pickle.dump(traces, f)
@@ -415,7 +416,7 @@ def main() -> None:
             # Save ground truth as well as perceived heading and distance
             converted_trace = [([xy_yaw_to_truth(*xy_yaw) for xy_yaw in xy_yaw_trace], prcv_trace)
                                for xy_yaw_trace, prcv_trace in traces]
-            out_pickle_name = 'lanenet_%s_sim_traces_%s.bag.pickle' % (controller, time.strftime("%Y-%m-%d-%H-%M-%S"))
+            out_pickle_name = 'lanenet_%s_sim_traces_%s.bag.pickle' % (controller, time_str)
             out_pickle = out_path.joinpath(out_pickle_name)
             with out_pickle.open('wb') as f:
                 pickle.dump(converted_trace, f)
