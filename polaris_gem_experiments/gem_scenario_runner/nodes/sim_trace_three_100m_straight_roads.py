@@ -322,10 +322,11 @@ def main() -> None:
     traces = []  # type: List[Tuple[List[Tuple[float, float, float]], List[Tuple[float, float]]]]
     time_usage_img, time_usage_lanenet, time_usage_dynamics = 0.0, 0.0, 0.0
     try:
-        for init_truth in init_truth_arr:
+        for i, init_truth in enumerate(init_truth_arr):
             scene = get_uniform_random_scene(*init_truth)  # New random scene for each trace
             rp.set_scene(scene)
-            rospy.loginfo("New Trace starting from (φ*, d*) = (%f, %f)" % tuple(init_truth))
+            rospy.loginfo("Trace #%d " % i +
+                          "starting from (φ*, d*) = (%f, %f)" % tuple(init_truth))
             true_pose_list, perceived_list = [], []
             curr_pose = scene.pose
             true_pose_list.append(deepcopy(curr_pose))
@@ -340,7 +341,7 @@ def main() -> None:
                 prcv_state = rp.perception(ros_img_msg)
                 perceived_list.append(prcv_state)
                 time_usage_lanenet += time.time() - start_nnet
-                rospy.loginfo("Perceived state (φ, d) = (%f, %f)" % prcv_state)
+                rospy.logdebug("Perceived state (φ, d) = (%f, %f)" % prcv_state)
                 start_dynamics = time.time()
 
                 if controller == "stanley":
