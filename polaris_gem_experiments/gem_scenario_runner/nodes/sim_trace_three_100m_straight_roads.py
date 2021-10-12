@@ -4,7 +4,7 @@ from copy import deepcopy
 import pathlib
 import pickle
 import time
-from typing import NamedTuple, Tuple
+from typing import List, NamedTuple, Tuple
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -107,12 +107,8 @@ def get_uniform_random_scene(phi: float, cte: float) -> LaneDetectScene:
         pose=pose)
 
 
-def pose_to_truth(pose: Pose, scene: LaneDetectScene) -> Tuple[float, float]:
-    heading = quat_to_yaw(pose.orientation)
-    distance = (pose.position.y + HALF_LANE_WIDTH) % PLOT_SEP - HALF_LANE_WIDTH
-    yaw_err = -heading
-    offset = -distance
-    return yaw_err, offset
+def pose_to_xy_yaw(pose: Pose) -> Tuple[float, float, float]:
+    return pose.position.x, pose.position.y, quat_to_yaw(pose.orientation)
 
 
 class ResetPose:
@@ -250,16 +246,15 @@ def control_pure_pursuit(prcv_state: Tuple[float, float]) -> float:
     yaw_err, offset = prcv_state
     heading, distance = -yaw_err, -offset
     # formula for calculating θ of goal point (same frame of reference as heading param)
-    # based on cosine rule of triangles: cos(A) = (b^2+c^2-a^2)/2bc
-    # cosθ = 1 + (distance^2 - lookahead^2)/2*radius*(radius+distance)
-    path_theta = np.arccos(1 + (distance ** 2 - LOOK_AHEAD ** 2) /
-                           (2 * CURVE_PATH_RADIUS * (CURVE_PATH_RADIUS + distance))) / 2
 
     # Let β be the angle between tangent line of curve path and the line from rear axle to look ahead point
-    # based on sine rule of triangles: sinA/a = sinB/b = sinC/c
-    # sin(π/2-θ)/lookahead = sin(β+θ)/-distance -> -distance*cosθ/lookahead = sin(β+θ)
-    # -> β = sin^-1(-distance*cosθ/lookahead) - θ
-    beta = np.arcsin(-distance*np.cos(path_theta)/LOOK_AHEAD) - path_theta
+    # based on cosine rule of triangles: cos(A) = (b^2+c^2-a^2)/2bc
+    # cos(π/2+β) = (lookahead^2 + (-distance+radius)^2 - radius^2)/(2*lookahead*(-distance+radius))
+    #            = -distance/lookahead + (lookahead^2 - distance^2)/(2*lookahead*(-distance+radius))
+    #            ~ -distance/lookahead  # when radius==inf
+    # Further, cos(π/2+β) = sinβ
+    # -> β = arcsin(-distance/lookahead)
+    beta = np.arcsin(-distance/LOOK_AHEAD)
     # calculate steering angle
     alpha = beta - heading
     angle_i = np.arctan((2 * K_PP * WHEEL_BASE * np.sin(alpha)) / LOOK_AHEAD)
@@ -361,16 +356,16 @@ def main() -> None:
     init_truth_arr = gen_init_truth_arr(num_traces, (phi_min, phi_max), (cte_min, cte_max))
     rospy.sleep(0.001)  # Wait for the simulated clock to start
 
-    traces = []
+    traces = []  # type: List[Tuple[List[Tuple[float, float, float]], List[Tuple[float, float]]]]
     time_usage_img, time_usage_lanenet, time_usage_dynamics = 0.0, 0.0, 0.0
     try:
         for init_truth in init_truth_arr:
             scene = get_uniform_random_scene(*init_truth)  # New random scene for each trace
             rp.set_scene(scene)
             rospy.loginfo("New Trace starting from (φ*, d*) = (%f, %f)" % tuple(init_truth))
-            truth_list, perceived_list = [], []
-            truth_list.append(tuple(init_truth))
+            true_pose_list, perceived_list = [], []
             curr_pose = scene.pose
+            true_pose_list.append(deepcopy(curr_pose))
             for _ in range(max_trace_len):
                 start_gen_img = time.time()
                 rp.set_model_pose(curr_pose)
@@ -393,21 +388,12 @@ def main() -> None:
                     raise RuntimeError
 
                 time_usage_dynamics += time.time() - start_dynamics
-                next_truth = pose_to_truth(next_pose, scene)
                 curr_pose = next_pose
-                truth_list.append(next_truth)
-                rospy.logdebug("Next (φ*, d*) = (%f, %f)" % next_truth)
+                true_pose_list.append(deepcopy(curr_pose))
+
+            # Convert from Gazebo pose to ground truth perception value after whole simulation trace
+            truth_list = [pose_to_xy_yaw(pose) for pose in true_pose_list]
             traces.append((truth_list, perceived_list))
-
-        if frame_id == "front_wheel_axle":
-            # Since the ground truth is w.r.t base_footprint, i.e., rear axle,
-            # adjust to front axle for stanley control. Note that only offset is affected.
-            new_traces = []
-            for truth_list, perceived_list in traces:
-                new_truth_list = [(yaw_err, offset+np.sin(yaw_err)) for yaw_err, offset in truth_list]
-                new_traces.append((new_truth_list, perceived_list))
-            traces = new_traces
-
     except KeyboardInterrupt:
         rospy.loginfo("Shutting down")
     finally:
@@ -416,10 +402,23 @@ def main() -> None:
         rospy.loginfo("Compute Next State: %f seconds" % time_usage_dynamics)
         out_path = pathlib.Path(out_dir)
         if out_path.is_dir():
-            out_pickle_name = 'lanenet_%s_sim_traces_%s.bag.pickle' % (controller, time.strftime("%Y-%m-%d-%H-%M-%S"))
+            # Save x, y, yaw in case for sanity check
+            out_pickle_name = 'lanenet_%s_sim_traces_%s.xy_yaw.pickle' % (controller, time.strftime("%Y-%m-%d-%H-%M-%S"))
             out_pickle = out_path.joinpath(out_pickle_name)
             with out_pickle.open('wb') as f:
                 pickle.dump(traces, f)
+
+            def xy_yaw_to_truth(x, y, yaw) -> Tuple[float, float]:
+                yaw_err = -yaw
+                offset = (-y + PLOT_SEP/2) % PLOT_SEP - PLOT_SEP/2
+                return yaw_err, offset
+            # Save ground truth as well as perceived heading and distance
+            converted_trace = [([xy_yaw_to_truth(*xy_yaw) for xy_yaw in xy_yaw_trace], prcv_trace)
+                               for xy_yaw_trace, prcv_trace in traces]
+            out_pickle_name = 'lanenet_%s_sim_traces_%s.bag.pickle' % (controller, time.strftime("%Y-%m-%d-%H-%M-%S"))
+            out_pickle = out_path.joinpath(out_pickle_name)
+            with out_pickle.open('wb') as f:
+                pickle.dump(converted_trace, f)
 
 
 if __name__ == "__main__":
