@@ -20,7 +20,6 @@ from rosbag import Bag
 from gem_lanenet.lanenet_w_line_fit import LaneNetWLineFit
 
 PLOT_SEP = 30.0  # meter
-MAX_CTE = 2.0  # meter
 WHEEL_BASE = 1.75  # meter
 
 StampedLane = NamedTuple("StampedLane", [('stamp', float), ('heading', float), ('distance', float)])
