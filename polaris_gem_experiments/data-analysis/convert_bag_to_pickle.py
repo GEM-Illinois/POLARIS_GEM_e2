@@ -57,8 +57,8 @@ def rostime_to_msec(rt: TVal) -> float:
 def odom_to_truth(msg: Odometry) -> Tuple[float, float]:
     yaw = quat_to_yaw(msg.pose.pose.orientation)
     true_heading = -yaw  # type: float
-    d = (msg.pose.pose.position.y + MAX_CTE) % PLOT_SEP - MAX_CTE
-    assert abs(d) < MAX_CTE
+    d = (msg.pose.pose.position.y + PLOT_SEP/2) % PLOT_SEP - PLOT_SEP/2
+    assert abs(d) < PLOT_SEP/2
     true_distance = -d
     return true_heading, true_distance
 
