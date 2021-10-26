@@ -87,11 +87,13 @@ def main(argv: Any) -> None:
     print("Number of NaN samples: %d" % sum(len([s for s in raw_samples if any(math.isnan(field) for field in s)])
                                             for t, raw_samples in truth_samples))
     # Filter NaN
-    truth_samples = [(t, [s for s in raw_samples if not any(math.isnan(field) for field in s)])
-                     for t, raw_samples in truth_samples]
+    if argv.no_nan:
+        truth_samples = [(t, [s for s in raw_samples if not any(math.isnan(field) for field in s)])
+                         for t, raw_samples in truth_samples]
 
-    for truth, samples in truth_samples:
-        print("Ground truth: %s; #Samples: %d" % (str(truth), len(samples)))
+    # for truth, samples in truth_samples:
+    #     print("Ground truth: %s; #Samples: %d" % (str(truth), len(samples)))
+
     print("Total Number of Ground Truths: %d" % len(truth_samples))
     if len(truth_samples) != len(predefined):
         print("Total Number of Ground Truths  %d is not equal to expected number %d"
@@ -108,5 +110,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('predefined_truths', type=argparse.FileType('rb'))
     parser.add_argument('pickle_file', nargs='+', type=argparse.FileType('rb'))
+    parser.add_argument('--no-nan', type=bool, default=False, help="Filter NaN values. (default: %(default)s)")
     parser.add_argument('-o', '--output', type=argparse.FileType('wb'), help="Save output as a pickle file")
     main(parser.parse_args())
