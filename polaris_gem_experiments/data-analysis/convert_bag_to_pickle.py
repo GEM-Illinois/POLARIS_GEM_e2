@@ -63,10 +63,9 @@ def odom_to_truth(msg: Odometry) -> Tuple[float, float]:
 
 
 class ImageToLane:
-    def __init__(self, lanenet: LaneNetWLineFit, frame_id: str = "base_footprint"):
+    def __init__(self, lanenet: LaneNetWLineFit):
         self._lanenet = lanenet
         self._bridge = cv_bridge.CvBridge()
-        self._frame_id = frame_id
 
         self.skip_count = 0
         self.time_usage = 0.0
@@ -94,18 +93,10 @@ class ImageToLane:
         # where x-axis is the forward direction of the ego vehicle
         yaw_err = np.arctan(center_line.convert().coef[1])
 
-        # Calculate the offset as the distance from the chosen frame to lane center line
-        if self._frame_id in ["base_footprint", "base_link"]:
-            # base_footprint or base_link is the origin (0.0, 0.0)
-            y_diff = center_line(0.0) - 0.0
-        elif self._frame_id == "front_wheel_axle":
-            # front_wheel_axle is assumed at (WHEEL_BASE, 0.0) in meters.
-            y_diff = center_line(WHEEL_BASE) - 0.0
-        else:
-            warnings.warn(
-                "Unsupported frame_id %s for computing cross track error. " % self._frame_id
-                + "Skipping.")
-            return np.nan. np.nan
+        # Calculate the offset as the distance from base_footprint to lane center line
+        # NOTE the conversion to front wheel axle as reference is done in postprocessing
+        # base_footprint or base_link is the origin (0.0, 0.0)
+        y_diff = center_line(0.0) - 0.0
         offset = y_diff * np.cos(yaw_err)
         return yaw_err, offset
 
