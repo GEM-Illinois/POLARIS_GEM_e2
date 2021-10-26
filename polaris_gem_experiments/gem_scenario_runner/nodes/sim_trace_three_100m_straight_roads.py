@@ -271,7 +271,7 @@ def control_stanley(prcv_state: Tuple[float, float]) -> float:
     heading, distance = -yaw_err, -offset
 
     # NOTE Convert to front axle assuming the lane is a line
-    distance_f = distance + np.sin(heading)
+    distance_f = distance + WHEEL_BASE*np.sin(heading)
     angle = -heading + np.arctan2(K_ST*-distance_f, SPEED)
     angle = np.clip(angle, -STEER_LIM, STEER_LIM)  # type: float  # no rounding performed
     return angle
