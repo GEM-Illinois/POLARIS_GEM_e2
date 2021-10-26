@@ -147,7 +147,7 @@ Perception nondet_approx(Perception truth) {
     { __VERIFIER_assume(0);/* skip the branch */}
   }
   else
-  { __VERIFIER_assume(0);/* skip the branch */}
+  { __VERIFIER_assume(1);/* allow any output */}
   return ret;
 }
 
