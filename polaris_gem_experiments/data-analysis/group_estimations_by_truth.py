@@ -84,6 +84,8 @@ def main(argv: Any) -> None:
     # Filter those truths without enough samples
     truth_samples = [entry for entry in truth_samples if len(entry[1]) > 10]
 
+    print("Number of NaN samples: %d" % sum(len([s for s in raw_samples if any(math.isnan(field) for field in s)])
+                                            for t, raw_samples in truth_samples))
     # Filter NaN
     truth_samples = [(t, [s for s in raw_samples if not any(math.isnan(field) for field in s)])
                      for t, raw_samples in truth_samples]
