@@ -16,6 +16,9 @@ StampedData = NamedTuple("StampedData", [('stamp', int), ('data', Tuple[float, .
 ODOM_TOPIC = "base_footprint/odom"
 LANE_TOPIC = "estimated_lane"
 
+# Parameter specific to our Gazebo world
+SCENE_SEP = 30.0  # meter
+
 
 def quat_to_yaw(quat: Quaternion) -> float:
     x, y, z, w = quat.x, quat.y, quat.z, quat.w
@@ -24,8 +27,11 @@ def quat_to_yaw(quat: Quaternion) -> float:
 
 
 def odom_to_state(msg: Odometry) -> Tuple[float, float, float]:
+    # Normalize y given the three road scenes are translational symmetric
+    y = (msg.pose.pose.position.y + SCENE_SEP / 2) % SCENE_SEP - SCENE_SEP / 2
+    assert abs(y) < SCENE_SEP / 2
     yaw = quat_to_yaw(msg.pose.pose.orientation)
-    return msg.pose.pose.position.x, msg.pose.pose.position.y, yaw
+    return msg.pose.pose.position.x, y, yaw
 
 
 def lane_to_percept(msg: SimpleLaneStamped) -> Tuple[float, float]:
