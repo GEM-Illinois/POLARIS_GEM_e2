@@ -65,7 +65,7 @@ def main():
                                         cte_range=(cte_min, cte_max),
                                         num_truths=num_truths)
         output_file_name = "%d_truths-%s-pi_%d-%.1fm.yaml" % (num_truths, distribution, pi_div, cte_max)
-    elif distribution == "uniform_partition":
+    elif distribution == "partitioned_uniform":
         num_phi_parts, num_cte_parts = 20, 4
         assert num_truths % (num_phi_parts*num_cte_parts) == 0
         num_truths_per_part = num_truths // (num_phi_parts*num_cte_parts)
@@ -88,10 +88,13 @@ def main():
     else:
         raise NotImplementedError("Unsupported probability distribution %s" % distribution)
 
+    # NOTE Swap the order from ["phi", "cte"] to ["cte", "phi"]
+    truth_list = [[v2, v1] for v1, v2 in truth_list]
+
     print("Saving generated ground truths to file '%s'" % output_file_name)
     with open(output_file_name, "w") as out_file:
         yaml.safe_dump({
-            "fields": {"truth": ["phi", "cte"]},
+            "fields": {"truth": ["cte", "phi"]},
             "truth_list": truth_list}, out_file, default_flow_style=None)
 
 
