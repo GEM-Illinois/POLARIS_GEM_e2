@@ -21,7 +21,7 @@ def is_close(l1: Tuple[float, float], l2: Tuple[float, float]) -> bool:
 
 def state_to_truth(state: Tuple[float, float, float]) -> Tuple[float, float]:
     x, y, yaw = state
-    return -yaw, -y
+    return -y, -yaw
 
 
 def get_closest_truth(predefined_kd_tree: KDTree, state: Tuple[float, float, float]) -> Tuple[float, float]:
