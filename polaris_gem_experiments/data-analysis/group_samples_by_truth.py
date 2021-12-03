@@ -89,9 +89,9 @@ def merge_state_percept_as_sample(sorted_state_list, sorted_percept_list):
 
 
 def main(argv: Any) -> None:
-    pkl_data = yaml.safe_load(argv.predefined_truths)
-    predefined = pkl_data["truth_list"]
-    truth_fields = pkl_data["fields"]
+    yaml_data = yaml.safe_load(argv.predefined_truths)
+    predefined = yaml_data["truth_list"]
+    truth_fields = yaml_data["fields"]
     predefined_kd_tree = KDTree(np.array(predefined))
 
     truth_samples = []
@@ -135,10 +135,13 @@ def main(argv: Any) -> None:
     if argv.output is not None:
         print("Save to %s" % argv.output.name)
         data = {
+            "truth_config": argv.predefined_truths.name,
             "fields": {"truth": ("cte", "phi"), "samples": ("x", "y", "yaw", "cte", "phi")},
             "truth_samples": truth_samples
         }
-        pickle.dump(data, argv.output)
+        if "distribution" in yaml_data:
+            data["truth_distribution"] = yaml_data["distribution"]
+        pickle.dump(data, argv.output, protocol=0)
 
 
 if __name__ == "__main__":
