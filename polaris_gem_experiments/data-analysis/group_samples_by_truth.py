@@ -106,6 +106,9 @@ def main(argv: Any) -> None:
         for state, percept in merge_state_percept_as_sample(stamped_states, stamped_percepts):
             truth = get_closest_truth(predefined_kd_tree, state)
             sample = state + percept  # Concatenate tuples
+            # Ensure using built-in Python data type
+            truth = tuple(float(v) for v in truth)
+            sample = tuple(float(v) for v in sample)
             if len(truth_samples) > 0 and is_close(truth_samples[-1][0], truth):
                 truth_samples[-1][1].append(sample)  # Group with previous truth
             else:
