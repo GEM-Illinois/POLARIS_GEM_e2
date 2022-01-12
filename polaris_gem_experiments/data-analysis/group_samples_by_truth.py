@@ -141,7 +141,7 @@ def main(argv: Any) -> None:
         }
         if "distribution" in yaml_data:
             data["truth_distribution"] = yaml_data["distribution"]
-        pickle.dump(data, argv.output, protocol=0)
+        pickle.dump(data, argv.output)
 
 
 if __name__ == "__main__":
