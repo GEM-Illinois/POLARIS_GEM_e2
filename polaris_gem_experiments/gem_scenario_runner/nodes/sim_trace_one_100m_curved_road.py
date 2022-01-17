@@ -126,7 +126,7 @@ def get_uniform_random_scene(yaw_err: float, offset: float) -> LaneDetectScene:
 
     Recall that for left turn,
     offset = || (x, y) - c || - r
-    yaw_err = (ARC_ANG + pi/2) - θ
+    yaw_err = (arc_ang + pi/2) - θ
 
     By rewriting the equations, we can derive a vehicle pose
     || (x, y) - c || = r + offset
