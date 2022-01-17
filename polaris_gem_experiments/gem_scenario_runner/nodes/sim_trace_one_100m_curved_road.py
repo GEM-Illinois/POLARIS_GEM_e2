@@ -379,7 +379,6 @@ def main() -> None:
     rp = ResetPose(model_name, lanenet_detect)
 
     init_truth_arr = gen_init_truth_arr(num_traces, (phi_min, phi_max), (cte_min, cte_max))
-    # init_truth_arr = np.array([(0, 0.3)])
     rospy.sleep(0.001)  # Wait for the simulated clock to start
 
     traces = []  # type: List[Tuple[List[Tuple[float, float, float]], List[Tuple[float, float]]]]
