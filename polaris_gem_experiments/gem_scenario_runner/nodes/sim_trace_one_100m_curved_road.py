@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+"""
+Monte Carlo simulation lane centering on a left curved road in Gazebo
+
+Following the convention of frames from REP 103, the forward direction of the vehicle aligns with x-axis.
+The left turn road is designed so that the center of all arcs are at (x, y) = (0, 100),
+and therefore the arc of the road is from (0, 0) to (100, 100) with radius 100.0m.
+Given the left lane width is 4.6 m, and the right lane width is 4.4 m by measuring the road model,
+the arc of the left lane is from (0, 2.3) to (97.7, 100) with radius 97.7m, and
+the arc of the right lane is from (0, -2.2) to (102.2, 100) with radius 102.2m.
+The width of each lane is measured by the distance between the mid of lane markers.
+"""
 
 from copy import deepcopy
 import pathlib
