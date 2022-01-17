@@ -103,13 +103,13 @@ def xy_yaw_to_truth(x, y, yaw) -> Tuple[float, float]:
     """
     Given the vehicle pose is (x, y, θ).
     Assuming a lane is defined by the center point c and radius r where r >> || (x, y) - c ||,
-    and the closest point to (x, y) on the arc is defined by (c + r*cosγ, c + r*sinγ).
-    where γ can be derived from atan((y-c[1])/(x-c[0])).
+    and the closest point to (x, y) on the arc is defined by (c + r*cos(arc_ang), c + r*sin(arc_ang) ).
+    where arc_ang can be derived from atan((y-c[1])/(x-c[0])).
     the ground truth (phi, cte) is related by the following.
 
     For left turn,
     offset = || (x, y) - c || - r
-    yaw_err = (γ + pi/2) - θ
+    yaw_err = (arc_ang + pi/2) - θ
     """
     lane_arc_radius = L_LANE_ARC_RADIUS  # TODO select from lanes?
     v_diff = np.array([x, y]) - np.array(ARC_CENTER)
@@ -121,17 +121,17 @@ def xy_yaw_to_truth(x, y, yaw) -> Tuple[float, float]:
 def get_uniform_random_scene(yaw_err: float, offset: float) -> LaneDetectScene:
     """ Get a poses for a given ground truth phi and cte
 
-    We uniformly sample on γ in [ARC_ANG_START, ARC_ANG_STOP] to define the closest point to (x, y) on the arc
-    (c + r*cosγ, c + r*sinγ).
+    We uniformly sample an arc_ang in [ARC_ANG_START, ARC_ANG_STOP] to define the closest point to (x, y) on the arc
+    (c + r*cos(arc_ang), c + r*sin(arc_ang)).
 
     Recall that for left turn,
     offset = || (x, y) - c || - r
-    yaw_err = (γ + pi/2) - θ
+    yaw_err = (ARC_ANG + pi/2) - θ
 
     By rewriting the equations, we can derive a vehicle pose
     || (x, y) - c || = r + offset
-    (x, y) = c + (r+offset)*(cosγ, sinγ)
-    θ = (γ + pi/2) - yaw_err
+    (x, y) = c + (r+offset)*(cos(arc_ang), sin(arc_ang))
+    θ = (arc_ang + pi/2) - yaw_err
 
     Parameters
     ----------
