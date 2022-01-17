@@ -1,0 +1,139 @@
+<?xml version="1.0" ?>
+<!--
+Following the convention of body frame from REP 103, the forward direction of the vehicle aligns with x-axis.
+The left turn road is designed so that the center of the arcs are at (x, y) = (0, 100),
+and therefore the arc of the road is from (0, 0) to (100, 100) with radius 100.0m.
+Given the left lane width is 4.6 m, and the right lane width is 4.4 m by measuring the road model,
+the arc of the left lane is from (0, 2.3) to (97.7, 100) with radius 97.7m, and
+the arc of the right lane is from (0, -2.2) to (102.2, 100) with radius 102.2m.
+The width of each lane is measured by the distance between the middle of lane markers.
+-->
+<sdf version='1.5'>
+    <world name='default'>
+        <gui>
+            <camera name="user_camera">
+                <pose>1.953330 -2.960521 2.117045 0 0.411456 1.892190</pose>
+            </camera>
+        </gui>
+
+        <light name='sundir' type='directional'>
+            <cast_shadows>1</cast_shadows>
+            <pose>0 0 10 0 -0 0</pose>
+            <diffuse>1.0 0.95 0.8 1</diffuse>
+            <specular>0.7 0.7 0.7 1</specular>
+            <attenuation>
+                <range>1000</range>
+                <constant>0.9</constant>
+                <linear>0.01</linear>
+                <quadratic>0.001</quadratic>
+            </attenuation>
+            <direction>-0.3 0.4 -1.0</direction>
+        </light>
+
+        <physics type="ode" name="r_500" default="true">
+            <max_step_size>0.001</max_step_size>
+            <real_time_factor>1.0</real_time_factor>
+            <real_time_update_rate>1000.0</real_time_update_rate>
+            <gravity>0 0 -9.8</gravity>
+        </physics>
+
+        <scene>
+            <sky>
+                <clouds>
+                    <speed>12</speed>
+                </clouds>
+            </sky>
+
+            <grid>true</grid>
+        </scene>
+        <model name="grassland">
+            <link name="body">
+                <collision name="geom">
+                    <geometry>
+                        <plane>
+                            <normal>0 0 1</normal>
+                        </plane>
+                    </geometry>
+                    <surface>
+                        <friction>
+                            <ode>
+                                <mu>100</mu>
+                                <mu2>50</mu2>
+                            </ode>
+                        </friction>
+                    </surface>
+                </collision>
+                <visual name='visual'>
+                    <cast_shadows>0</cast_shadows>
+                    <geometry>
+                        <plane>
+                            <normal>0 0 1</normal>
+                            <size>500 500</size>
+                        </plane>
+                    </geometry>
+                    <material>
+                        <script>
+                            <uri>file://media/materials/scripts/gazebo.material</uri>
+                            <name>Gazebo/Grass</name>
+                        </script>
+                    </material>
+                </visual>
+            </link>
+            <static>true</static>
+        </model>
+        <model name="DS_Left_Curved_Road_0">
+            <static>1</static>
+            <pose>52.75 47.25 -0.08 0 -0 0</pose>
+            <link name='link'>
+                <inertial>
+                    <pose>0 0 0 0 -0 0</pose>
+                    <mass>1</mass>
+                    <inertia>
+                        <ixx>1</ixx>
+                        <iyy>1</iyy>
+                        <izz>1</izz>
+                        <ixy>0</ixy>
+                        <ixz>0</ixz>
+                        <iyz>0</iyz>
+                    </inertia>
+                </inertial>
+                <collision name='collision'>
+                    <geometry>
+                        <mesh>
+                            <uri>model://ds_curved_road_100m/meshes/curved_road_100m.dae</uri>
+                        </mesh>
+                    </geometry>
+                    <max_contacts>10</max_contacts>
+                    <surface>
+                        <contact>
+                            <ode/>
+                        </contact>
+                        <bounce/>
+                        <friction>
+                            <torsional>
+                                <ode/>
+                            </torsional>
+                            <ode/>
+                        </friction>
+                    </surface>
+                </collision>
+                <visual name='visual'>
+                    <geometry>
+                        <mesh>
+                            <uri>model://ds_curved_road_100m/meshes/curved_road_100m.dae</uri>
+                        </mesh>
+                    </geometry>
+                    <material>
+                        <script>
+                            <uri>file://media/materials/scripts/ds_sim.material</uri>
+                            <name>DSSim/Road</name>
+                        </script>
+                    </material>
+                </visual>
+                <self_collide>0</self_collide>
+                <enable_wind>0</enable_wind>
+                <kinematic>0</kinematic>
+            </link>
+        </model>
+    </world>
+</sdf>
