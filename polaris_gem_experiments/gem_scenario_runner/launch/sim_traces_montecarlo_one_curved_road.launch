@@ -9,8 +9,8 @@
 
     <!-- Experiment Setup -->
     <arg name="controller" default="pure_pursuit" />
-    <arg name="num_traces" default="5" />
-    <arg name="max_trace_len" default="200" />
+    <arg name="num_traces" default="1000" />
+    <arg name="max_trace_len" default="100" />
 
     <!-- LaneNet config -->
     <arg name="config_path" default="$(find gem_lanenet)/configs/conf_polaris_gem.lanenet.yaml" />
