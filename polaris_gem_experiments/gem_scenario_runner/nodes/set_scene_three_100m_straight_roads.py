@@ -8,44 +8,23 @@ import itertools
 from typing import Generator, NamedTuple
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 import rospy
-from gazebo_msgs.msg import ModelState
-from gazebo_msgs.srv import SetModelState, SetLightProperties
-from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
-from std_msgs.msg import ColorRGBA
+from geometry_msgs.msg import Pose, Point
+
+from gem_scenario_runner import euler_to_quat, set_light_properties, set_model_pose, DIFFUSE_MAP
+
 
 PLOT_NUM = 3
 PLOT_SEP = 30.0  # meter
 LANE_START, LANE_STOP = 2.0, 32.0  # meter
 BOT_Z = -0.11  # meter
 
-GZ_SET_MODEL_STATE = "/gazebo/set_model_state"
-GZ_SET_LIGHT_PROPERTIES = "/gazebo/set_light_properties"
-
-DIFFUSE_MAP = {
-    0: 0.7 * np.array([1.0, 0.95, 0.8, 1.0]),
-    1: np.array([1.0, 0.95, 0.8, 1.0])
-}
 
 LaneDetectScene = NamedTuple("LaneDetectScene", [
     ("light_level", int),
     ("pose", Pose)
 ])  # TODO Put this in a Python package for reuse?
-
-
-def quat_to_yaw(quat: Quaternion) -> float:
-    x, y, z, w = quat.x, quat.y, quat.z, quat.w
-    # Convention for Euler angles. Follow REP-103
-    yaw, pitch, roll = Rotation.from_quat((x, y, z, w)).as_euler("ZYX")
-    return yaw
-
-
-def euler_to_quat(yaw, pitch=0.0, roll=0.0) -> Quaternion:
-    # Convention for Euler angles. Follow REP-103
-    quat = Rotation.from_euler("ZYX", (yaw, pitch, roll)).as_quat()
-    return Quaternion(*quat)
 
 
 def check_ground_truth(phi: float, cte: float, pose: Pose) -> bool:
@@ -114,50 +93,8 @@ class TimedResetScene:
         self.set_scene(scene)
 
     def set_scene(self, scene: LaneDetectScene) -> None:
-        self._set_light_properties(scene.light_level)
-        self._set_model_state(scene.pose)
-
-    def _set_light_properties(self, light_level: int) -> None:
-        if light_level not in DIFFUSE_MAP:
-            raise ValueError("Unsupported light level %d" % light_level)
-
-        # Set lighting
-        diffuse = DIFFUSE_MAP[light_level]
-        rospy.wait_for_service(GZ_SET_LIGHT_PROPERTIES)
-        try:
-            set_light_properties_srv = \
-                rospy.ServiceProxy(GZ_SET_LIGHT_PROPERTIES, SetLightProperties)
-            # TODO Change light pose and direction
-            resp = set_light_properties_srv(
-                light_name=self.__light_name,
-                cast_shadows=True,
-                diffuse=ColorRGBA(*diffuse),
-                specular=ColorRGBA(0.7, 0.7, 0.7, 1),
-                attenuation_constant=0.9,
-                attenuation_linear=0.01,
-                attenuation_quadratic=0.001,
-                direction=Vector3(-0.3, 0.4, -1.0),
-                pose=Pose(position=Point(0, 0, 10), orientation=Quaternion(0, 0, 0, 1))
-            )  # TODO Check response
-            pass
-        except rospy.ServiceException as e:
-            rospy.logwarn("Service call failed: %s" % e)
-
-    def _set_model_state(self, pose: Pose) -> None:
-        # Teleport vehicle model
-        msg = ModelState()
-        msg.model_name = self.__model_name
-        msg.reference_frame = "world"  # Default is also world.
-        msg.pose = pose
-
-        rospy.wait_for_service(GZ_SET_MODEL_STATE)
-        try:
-            set_model_state_srv = \
-                rospy.ServiceProxy(GZ_SET_MODEL_STATE, SetModelState)
-            resp = set_model_state_srv(msg)
-            # TODO Check response
-        except rospy.ServiceException as e:
-            rospy.logwarn("Service call failed: %s" % e)
+        set_light_properties(self.__light_name, scene.light_level)
+        set_model_pose(self.__model_name, "world", scene.pose)
 
 
 def main():
