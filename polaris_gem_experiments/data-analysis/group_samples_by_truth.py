@@ -12,6 +12,8 @@ from scipy.spatial import KDTree
 HEADING_THRES = 3 * 10 ** -4
 DISTANCE_THRES = 2 * 10 ** -4
 
+# Parameter specific to our Gazebo world
+SCENE_SEP = 30.0  # meter
 PLOT_NUM = 3
 
 
@@ -21,6 +23,9 @@ def is_close(l1: Tuple[float, float], l2: Tuple[float, float]) -> bool:
 
 def state_to_truth(state: Tuple[float, float, float]) -> Tuple[float, float]:
     x, y, yaw = state
+    # Normalize y given the three road scenes are translational symmetric
+    y = (y + SCENE_SEP / 2) % SCENE_SEP - SCENE_SEP / 2
+    assert abs(y) < SCENE_SEP / 2
     return -y, -yaw
 
 
