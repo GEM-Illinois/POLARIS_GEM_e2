@@ -4,7 +4,7 @@ from copy import deepcopy
 import pathlib
 import pickle
 import time
-from typing import List, NamedTuple, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from scipy.stats.distributions import truncnorm
@@ -17,7 +17,8 @@ from gem_lanenet.lanenet_w_line_fit import LaneNetWLineFit
 
 from gem_scenario_runner import euler_to_quat, quat_to_yaw, pause_physics, unpause_physics, \
     control_pure_pursuit, control_stanley, dynamics, \
-    set_model_pose, set_light_properties, DIFFUSE_MAP
+    set_model_pose, set_light_properties, get_uniform_random_light_level, \
+    LaneDetectScene
 
 PLOT_NUM = 3
 PLOT_SEP = 30.0  # meter
@@ -29,13 +30,6 @@ PHI_LIM = np.pi / 12  # radian. 15 degrees
 CTE_LIM = 1.2  # meter
 
 CURVE_PATH_RADIUS = np.inf
-
-LaneDetectScene = NamedTuple("LaneDetectScene", [
-    ("light_level", int),
-    ("road_id", int),
-    ("longitudinal_offset", float),
-    ("pose", Pose)
-])  # TODO Put this in a Python package for reuse?
 
 
 def check_ground_truth(phi: float, cte: float, pose: Pose) -> bool:
@@ -72,9 +66,7 @@ def get_uniform_random_scene(phi: float, cte: float) -> LaneDetectScene:
     if not check_ground_truth(phi, cte, pose):
         rospy.logwarn("The pose does not map to the ground truth.")
     return LaneDetectScene(
-        light_level=np.random.choice(len(DIFFUSE_MAP)),
-        road_id=road_id,
-        longitudinal_offset=x,
+        light_level=get_uniform_random_light_level(),
         pose=pose)
 
 

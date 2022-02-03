@@ -15,7 +15,7 @@ from copy import deepcopy
 import pathlib
 import pickle
 import time
-from typing import List, NamedTuple, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from scipy.stats.distributions import truncnorm
@@ -27,9 +27,10 @@ import rospy
 from gem_lanenet.lanenet_w_line_fit import LaneNetWLineFit
 
 
-from gem_scenario_runner import DIFFUSE_MAP, set_light_properties, \
-    euler_to_quat, pose_to_xy_yaw, pause_physics, unpause_physics, control_pure_pursuit, dynamics, control_stanley, \
-    set_model_pose
+from gem_scenario_runner import \
+    euler_to_quat, pose_to_xy_yaw, control_pure_pursuit, dynamics, control_stanley, \
+    get_uniform_random_light_level, set_light_properties, set_model_pose, pause_physics, unpause_physics, \
+    LaneDetectScene
 
 # region Constants for the world file
 BOT_Z = -0.11  # meter  # Default elevation of the road
@@ -57,11 +58,6 @@ ARC_ANG_START, ARC_ANG_STOP = np.deg2rad(-75), np.deg2rad(-45)  # radians
 assert ARC_ANG_LB <= ARC_ANG_START <= ARC_ANG_STOP <= ARC_ANG_UB
 PHI_LIM = np.pi / 12  # radian. 15 degrees
 CTE_LIM = 1.2  # meter
-
-LaneDetectScene = NamedTuple("LaneDetectScene", [
-    ("light_level", int),
-    ("pose", Pose)
-])
 # endregion
 
 
@@ -118,7 +114,7 @@ def get_uniform_random_scene(yaw_err: float, offset: float) -> LaneDetectScene:
     if not check_ground_truth(yaw_err, offset, pose):
         rospy.logwarn("The pose does not map to the ground truth.")
     return LaneDetectScene(
-        light_level=np.random.choice(len(DIFFUSE_MAP)),
+        light_level=get_uniform_random_light_level(),
         pose=pose)
 
 

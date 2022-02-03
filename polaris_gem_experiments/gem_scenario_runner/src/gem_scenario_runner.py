@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, NamedTuple
 
 import numpy as np
 import rospy
@@ -43,6 +43,10 @@ def euler_to_quat(yaw, pitch=0.0, roll=0.0) -> Quaternion:
 
 def pose_to_xy_yaw(pose: Pose) -> Tuple[float, float, float]:
     return pose.position.x, pose.position.y, quat_to_yaw(pose.orientation)
+
+
+def get_uniform_random_light_level() -> int:
+    return np.random.choice(len(DIFFUSE_MAP))
 
 
 def pause_physics():
@@ -159,3 +163,33 @@ def dynamics(curr_pose: Pose, steering: float) -> Pose:
     return Pose(position=Point(next_x, next_y, curr_z),
                 orientation=euler_to_quat(yaw=next_yaw))
 
+
+LaneDetectScene = NamedTuple("LaneDetectScene", [
+    ("light_level", int),
+    ("pose", Pose)
+])  # TODO Put this in a Python package for reuse?
+
+
+class TimedResetScene:
+    """
+    This class defines the callback function to reset a Model to new poses as
+    well as other world properties such as light level and direction.
+    The callback is called periodically by rospy Timer class.
+    """
+
+    def __init__(self, model_name: str, light_name: str, gen_sample):
+        self.__model_name = model_name
+        self.__light_name = light_name
+        self.__it = gen_sample
+
+    def timer_callback(self, timer_ev: rospy.timer.TimerEvent) -> None:
+        try:
+            scene = next(self.__it)
+        except StopIteration:
+            rospy.signal_shutdown("No more poses")
+            return
+        self.set_scene(scene)
+
+    def set_scene(self, scene: LaneDetectScene) -> None:
+        set_light_properties(self.__light_name, scene.light_level)
+        set_model_pose(self.__model_name, "world", scene.pose)
