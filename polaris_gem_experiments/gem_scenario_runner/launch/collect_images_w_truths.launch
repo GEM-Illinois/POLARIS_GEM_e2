@@ -22,7 +22,7 @@
 
     <!-- Constants -->
     <arg name="world_name"
-         value="$(find gem_scenario_runner)/worlds/three_100m_straight_roads.world"/>
+         default="$(find gem_scenario_runner)/worlds/three_100m_straight_roads.world"/>
     <arg name="robot_name" value="gem"/>
 
     <include file="$(find gem_gazebo)/launch/gem_gazebo_rviz.launch">
@@ -35,6 +35,7 @@
     <group ns="$(arg robot_name)" if="$(arg reset_pose)">
         <node name="set_model_pose" pkg="gem_scenario_runner" type="set_scene_three_100m_straight_roads.py"
               output="screen" required="true">
+            <param name="gazebo_world_name" value="$(arg world_name)"/>
             <param name="gazebo_model_name" value="$(arg robot_name)"/>
             <param name="reset_period" type="double" value="$(arg reset_period)"/>
             <param name="num_scenes_each_truth" type="int" value="$(arg num_scenes_each_truth)"/>

@@ -1,4 +1,5 @@
-from typing import Tuple, NamedTuple
+import abc
+from typing import Tuple, NamedTuple, Iterable, Any
 
 import numpy as np
 import rospy
@@ -28,6 +29,11 @@ SPEED = 2.8  # meter/second
 CYCLE_SEC = 0.1  # second
 # endregion
 
+LaneDetectScene = NamedTuple("LaneDetectScene", [
+    ("light_level", int),
+    ("pose", Pose)
+])
+
 
 def quat_to_yaw(quat: Quaternion) -> float:
     x, y, z, w = quat.x, quat.y, quat.z, quat.w
@@ -47,6 +53,20 @@ def pose_to_xy_yaw(pose: Pose) -> Tuple[float, float, float]:
 
 def get_uniform_random_light_level() -> int:
     return np.random.choice(len(DIFFUSE_MAP))
+
+
+class GenSceneFromTruthBase(abc.ABC):
+    def __init__(self, truth_iter: Iterable[Any], num_scenes_each_truth: int) -> None:
+        self.__truth_it = iter(truth_iter)
+        self.__num_scenes_per_truth = num_scenes_each_truth
+
+    def __iter__(self):
+        return (self._get_scene_from_truth(truth)
+                for truth in self.__truth_it for _ in range(self.__num_scenes_per_truth))
+
+    @abc.abstractmethod
+    def _get_scene_from_truth(self, truth: Any) -> LaneDetectScene:
+        raise NotImplementedError
 
 
 def pause_physics():
@@ -164,12 +184,6 @@ def dynamics(curr_pose: Pose, steering: float) -> Pose:
                 orientation=euler_to_quat(yaw=next_yaw))
 
 
-LaneDetectScene = NamedTuple("LaneDetectScene", [
-    ("light_level", int),
-    ("pose", Pose)
-])  # TODO Put this in a Python package for reuse?
-
-
 class TimedResetScene:
     """
     This class defines the callback function to reset a Model to new poses as
@@ -177,10 +191,10 @@ class TimedResetScene:
     The callback is called periodically by rospy Timer class.
     """
 
-    def __init__(self, model_name: str, light_name: str, gen_sample):
+    def __init__(self, model_name: str, light_name: str, gen_sample: Iterable[LaneDetectScene]):
         self.__model_name = model_name
         self.__light_name = light_name
-        self.__it = gen_sample
+        self.__it = iter(gen_sample)
 
     def timer_callback(self, timer_ev: rospy.timer.TimerEvent) -> None:
         try:
