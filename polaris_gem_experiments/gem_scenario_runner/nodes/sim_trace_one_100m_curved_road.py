@@ -263,7 +263,7 @@ def main() -> None:
                 if controller == "stanley":
                     next_pose = dynamics(curr_pose, control_stanley(prcv_state))
                 elif controller == "pure_pursuit":
-                    next_pose = dynamics(curr_pose, control_pure_pursuit(prcv_state), L_LANE_ARC_RADIUS)
+                    next_pose = dynamics(curr_pose, control_pure_pursuit(prcv_state, L_LANE_ARC_RADIUS))
                 else:
                     raise RuntimeError
 
