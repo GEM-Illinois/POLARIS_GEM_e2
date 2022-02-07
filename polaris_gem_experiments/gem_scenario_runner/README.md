@@ -4,10 +4,17 @@
   a ROS node that mimic resetting simulation runs (See description below),
   and a ROS node that records ROS topics with rosbag.
 
-+ `nodes/set_pose_*.py`  
++ `nodes/set_scenes_*.py`  
+  An ad-hoc script for directly setting the model state of the robot ignoring the
+  physics. These scripts are used to set the vehicle to desired poses and record
+  camera images.
+  The file name for the specific Gazebo world is passed as a ROS parameter.
+  The world files can be found under the `worlds` folder.
+
++ `nodes/sim_traces_*.py`  
   Ad-hoc scripts for directly setting the model state of the robot ignoring the
-  physics. These scripts are used to mimic resetting a simulation run with
-  a desired initial pose of the robot.
+  physics. These scripts are used to simulate a run following a user-defined
+  discrete dynamic equations.
   Each script is only for a specific Gazebo world file as indicated by the file
   name of the script. Using the script with unmatched world files can cause
   the model initialized within obstacles, etc.
