@@ -4,7 +4,7 @@
   a ROS node that mimic resetting simulation runs (See description below),
   and a ROS node that records ROS topics with rosbag.
 
-+ `nodes/set_scenes_*.py`  
++ `nodes/set_scenes.py`  
   An ad-hoc script for directly setting the model state of the robot ignoring the
   physics. These scripts are used to set the vehicle to desired poses and record
   camera images.

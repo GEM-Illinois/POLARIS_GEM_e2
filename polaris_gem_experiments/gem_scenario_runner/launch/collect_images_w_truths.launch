@@ -33,7 +33,7 @@
     </include>
 
     <group ns="$(arg robot_name)" if="$(arg reset_pose)">
-        <node name="set_model_pose" pkg="gem_scenario_runner" type="set_scene_three_100m_straight_roads.py"
+        <node name="set_model_pose" pkg="gem_scenario_runner" type="set_scenes.py"
               output="screen" required="true">
             <param name="gazebo_world_name" value="$(arg world_name)"/>
             <param name="gazebo_model_name" value="$(arg robot_name)"/>
