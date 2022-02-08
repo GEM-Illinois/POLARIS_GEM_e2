@@ -26,13 +26,13 @@ HALF_LANE_WIDTH = 2.0  # meter
 LANE_START, LANE_STOP = 2.0, 32.0  # meter
 BOT_Z = -0.11  # meter
 
-PHI_LIM = np.pi / 12  # radian. 15 degrees
+PSI_LIM = np.pi / 12  # radian. 15 degrees
 CTE_LIM = 1.2  # meter
 
 CURVE_PATH_RADIUS = np.inf
 
 
-def check_ground_truth(phi: float, cte: float, pose: Pose) -> bool:
+def check_ground_truth(psi: float, cte: float, pose: Pose) -> bool:
     """ Check generated poses correspond to the given ground truth.
         Note that this is constructed so that there shouldn't be
         any floating point error.
@@ -41,14 +41,14 @@ def check_ground_truth(phi: float, cte: float, pose: Pose) -> bool:
     return True
 
 
-def get_uniform_random_scene(phi: float, cte: float) -> LaneDetectScene:
-    """ Get a poses for a given ground truth phi and cte
+def get_uniform_random_scene(psi: float, cte: float) -> LaneDetectScene:
+    """ Get a poses for a given ground truth psi and cte
     The samples are drawn first from a discrete choice among three lanes and
     then from a continuous uniform distribution between [LANE_START, LANE_STOP].
 
     Parameters
     ----------
-    phi : float
+    psi : float
         Heading angle error in radian
     cte : float
         Cross track error range in meter
@@ -58,12 +58,12 @@ def get_uniform_random_scene(phi: float, cte: float) -> LaneDetectScene:
     road_y = PLOT_SEP * road_id
     y = road_y - cte
     z = BOT_Z
-    yaw = -phi
+    yaw = -psi
     rospy.loginfo("Sampled (x, y, yaw) = (%f, %f, %f) " % (x, y, yaw) +
-                  "for ground truth (phi, cte) = (%f, %f)" % (phi, cte))
+                  "for ground truth (psi, cte) = (%f, %f)" % (psi, cte))
     pose = Pose(position=Point(x, y, z),
                 orientation=euler_to_quat(yaw=yaw))
-    if not check_ground_truth(phi, cte, pose):
+    if not check_ground_truth(psi, cte, pose):
         rospy.logwarn("The pose does not map to the ground truth.")
     return LaneDetectScene(
         light_level=get_uniform_random_light_level(),
@@ -126,12 +126,12 @@ class ResetPose:
         return yaw_err, offset
 
 
-def gen_init_truth_arr(num_traces: int, phi_bound: Tuple[float, float], cte_bound: Tuple[float, float]) \
+def gen_init_truth_arr(num_traces: int, psi_bound: Tuple[float, float], cte_bound: Tuple[float, float]) \
         -> np.ndarray:
-    phi_min, phi_max = phi_bound
+    psi_min, psi_max = psi_bound
     cte_min, cte_max = cte_bound
     my_mean, my_std = np.zeros(2), np.array([0.1, 0.4])
-    myclip_a, myclip_b = np.array([phi_min, cte_min]), np.array([phi_max, cte_max])
+    myclip_a, myclip_b = np.array([psi_min, cte_min]), np.array([psi_max, cte_max])
     a, b = (myclip_a - my_mean) / my_std, (myclip_b - my_mean) / my_std
     return truncnorm.rvs(a, b, size=(num_traces, 2), loc=my_mean, scale=my_std)
 
@@ -160,8 +160,8 @@ def main() -> None:
     config_path = rospy.get_param("~config_path")  # file path
     weights_path = rospy.get_param("~weights_path")  # file path
     out_dir = rospy.get_param("~out_dir", "")  # file path
-    phi_min = rospy.get_param("~phi_min", -PHI_LIM)  # radian
-    phi_max = rospy.get_param("~phi_max", PHI_LIM)  # radian
+    psi_min = rospy.get_param("~psi_min", -PSI_LIM)  # radian
+    psi_max = rospy.get_param("~psi_max", PSI_LIM)  # radian
     cte_min = rospy.get_param("~cte_min", -CTE_LIM)  # meter
     cte_max = rospy.get_param("~cte_max", CTE_LIM)  # meter
     num_traces = rospy.get_param("~num_traces", 5)
@@ -175,7 +175,7 @@ def main() -> None:
         weights_path=weights_path)
     rp = ResetPose(model_name, lanenet_detect)
 
-    init_truth_arr = gen_init_truth_arr(num_traces, (phi_min, phi_max), (cte_min, cte_max))
+    init_truth_arr = gen_init_truth_arr(num_traces, (psi_min, psi_max), (cte_min, cte_max))
     rospy.sleep(0.001)  # Wait for the simulated clock to start
 
     traces = []  # type: List[Tuple[List[Tuple[float, float, float]], List[Tuple[float, float]]]]

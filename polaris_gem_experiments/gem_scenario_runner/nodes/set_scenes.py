@@ -21,7 +21,7 @@ class GenScenesThreeStraightRoads(GenSceneFromTruthBase):
     BOT_Z = -0.11  # meter
 
     @classmethod
-    def _check_ground_truth(cls, phi: float, cte: float, pose: Pose) -> bool:
+    def _check_ground_truth(cls, psi: float, cte: float, pose: Pose) -> bool:
         """ Check generated poses correspond to the given ground truth.
             Note that this must be constructed so that there shouldn't be
             any floating point error.
@@ -30,7 +30,7 @@ class GenScenesThreeStraightRoads(GenSceneFromTruthBase):
         return True
 
     def _get_scene_from_truth(self, truth: Tuple[float, float]) -> LaneDetectScene:
-        """ Get a poses for a given ground truth phi and cte
+        """ Get a poses for a given ground truth psi and cte
         The samples are drawn first from a discrete choice among three lanes and
         then from a continuous uniform distribution between [LANE_START, LANE_STOP].
 
@@ -39,17 +39,17 @@ class GenScenesThreeStraightRoads(GenSceneFromTruthBase):
         truth : tuple of float
             Heading angle error in radian and Cross track error range in meter
         """
-        phi, cte = truth
+        psi, cte = truth
         x = np.random.uniform(self.LANE_START, self.LANE_STOP)
         road_y = self.PLOT_SEP * np.random.choice(np.arange(self.PLOT_NUM))
         y = road_y - cte
         z = self.BOT_Z
-        yaw = -phi
+        yaw = -psi
         rospy.loginfo("Sampled (x, y, yaw) = (%f, %f, %f) " % (x, y, yaw) +
-                      "for ground truth (phi, cte) = (%f, %f)" % (phi, cte))
+                      "for ground truth (psi, cte) = (%f, %f)" % (psi, cte))
         pose = Pose(position=Point(x, y, z),
                     orientation=euler_to_quat(yaw=yaw))
-        if not self._check_ground_truth(phi, cte, pose):
+        if not self._check_ground_truth(psi, cte, pose):
             rospy.logwarn("The pose does not map to the ground truth.")
         return LaneDetectScene(
             light_level=get_uniform_random_light_level(),
@@ -89,12 +89,10 @@ class GenScenesOneCurveRoad(GenSceneFromTruthBase):
     # region Constants to sample initial state
     ARC_ANG_START, ARC_ANG_STOP = np.deg2rad(-75), np.deg2rad(-45)  # radians
     assert ARC_ANG_LB <= ARC_ANG_START <= ARC_ANG_STOP <= ARC_ANG_UB
-    PHI_LIM = np.pi / 12  # radian. 15 degrees
-    CTE_LIM = 1.2  # meter
     # endregion
 
     @classmethod
-    def _check_ground_truth(cls, phi: float, cte: float, pose: Pose) -> bool:
+    def _check_ground_truth(cls, psi: float, cte: float, pose: Pose) -> bool:
         """ Check generated poses correspond to the given ground truth.
             Note that this must be constructed so that there shouldn't be
             any floating point error.
@@ -103,7 +101,7 @@ class GenScenesOneCurveRoad(GenSceneFromTruthBase):
         return True
 
     def _get_scene_from_truth(self, truth: Tuple[float, float]) -> LaneDetectScene:
-        """ Get a poses for a given ground truth phi and cte
+        """ Get a poses for a given ground truth psi and cte
 
         We uniformly sample an arc_ang in [ARC_ANG_START, ARC_ANG_STOP] to define the closest point to (x, y) on the arc
         (c + r*cos(arc_ang), c + r*sin(arc_ang)).
@@ -130,7 +128,7 @@ class GenScenesOneCurveRoad(GenSceneFromTruthBase):
         z = self.BOT_Z
         yaw = (arc_ang + np.pi / 2) - yaw_err
         rospy.loginfo("Sampled (x, y, yaw) = (%f, %f, %f) " % (x, y, yaw) +
-                      "for ground truth (phi, cte) = (%f, %f)" % (yaw_err, offset))
+                      "for ground truth (psi, cte) = (%f, %f)" % (yaw_err, offset))
         pose = Pose(position=Point(x, y, z),
                     orientation=euler_to_quat(yaw=yaw))
         if not self._check_ground_truth(yaw_err, offset, pose):
