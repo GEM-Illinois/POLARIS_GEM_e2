@@ -79,7 +79,7 @@ def main(argv: Any) -> None:
     for file_name, stamped_states, stamped_percepts in file_samples_iter:
         with open("%s.pickle" % file_name, 'wb') as f:
             data_w_header = {
-                "fields": {"state": ('x', 'y', 'yaw'), "percept": ('cte', 'phi')},
+                "fields": {"state": ('x', 'y', 'yaw'), "percept": ('cte', 'psi')},
                 "stamped_states": stamped_states,
                 "stamped_percepts": stamped_percepts
             }
