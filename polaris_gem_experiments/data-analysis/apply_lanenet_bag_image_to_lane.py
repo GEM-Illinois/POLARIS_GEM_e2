@@ -129,7 +129,8 @@ def main(argv) -> None:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Apply LaneNet on images messages in the input ROS bag "
+                                                 "and store result in the output ROS bag")
     parser.add_argument('bag_file', type=str)
     parser.add_argument(
         '-o', '--output', type=str, default="",
