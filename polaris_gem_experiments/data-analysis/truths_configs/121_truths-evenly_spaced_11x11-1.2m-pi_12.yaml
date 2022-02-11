@@ -1,5 +1,5 @@
 fields:
-  truth: [cte, phi]
+  truth: [cte, psi]
 distribution:
   evenly_spaced:
     grid: [11, 11]

@@ -2,6 +2,7 @@
 
 DEVEL_DIR=$HOME/Public/gem_ws/devel
 OUT_DIR=$HOME/Desktop  # Using absolute path is recommended
+TRUTH_FILE=truths_configs/100_truths-uniform-1.2m-pi_12.yaml
 
 source ${DEVEL_DIR}/setup.bash
 export ROS_MASTER_URI=http://localhost:61808
@@ -9,6 +10,7 @@ export GAZEBO_MASTER_URI=http://localhost:61828
 
 # Launch ROS nodes Gazebo simulator in background
 roslaunch gem_scenario_runner sim_traces_montecarlo.launch out_dir:=${OUT_DIR} \
+    truth_file:=${TRUTH_FILE} \
     gui:=false controller:=pure_pursuit &
 ROSLAUNCH_PID=$!
 

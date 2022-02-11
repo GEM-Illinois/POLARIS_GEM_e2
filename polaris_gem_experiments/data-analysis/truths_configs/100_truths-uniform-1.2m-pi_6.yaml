@@ -1,5 +1,5 @@
 fields:
-  truth: [cte, phi]
+  truth: [cte, psi]
 distribution:
   uniform:
     lb: [-1.2, -0.5235987755982988]  # [-1.2 m, -pi/6 rad]

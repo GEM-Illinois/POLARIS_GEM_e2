@@ -1,5 +1,5 @@
 import abc
-from typing import Tuple, NamedTuple, Iterable, Any
+from typing import NamedTuple, Iterable, Any
 
 import numpy as np
 import rospy
@@ -34,6 +34,18 @@ LaneDetectScene = NamedTuple("LaneDetectScene", [
     ("pose", Pose)
 ])
 
+Percept = NamedTuple("Percept", [
+    ("yaw_err", float),
+    ("offset", float),
+    ("curvature", float)
+])
+
+State = NamedTuple("State", [
+    ("x", float),
+    ("y", float),
+    ("yaw", float)
+])
+
 
 def quat_to_yaw(quat: Quaternion) -> float:
     x, y, z, w = quat.x, quat.y, quat.z, quat.w
@@ -47,8 +59,8 @@ def euler_to_quat(yaw, pitch=0.0, roll=0.0) -> Quaternion:
     return Quaternion(*quat)
 
 
-def pose_to_xy_yaw(pose: Pose) -> Tuple[float, float, float]:
-    return pose.position.x, pose.position.y, quat_to_yaw(pose.orientation)
+def pose_to_xy_yaw(pose: Pose) -> State:
+    return State(pose.position.x, pose.position.y, quat_to_yaw(pose.orientation))
 
 
 def get_uniform_random_light_level() -> int:
@@ -56,7 +68,7 @@ def get_uniform_random_light_level() -> int:
 
 
 class GenSceneFromTruthBase(abc.ABC):
-    def __init__(self, truth_iter: Iterable[Any], num_scenes_each_truth: int) -> None:
+    def __init__(self, truth_iter: Iterable[Percept], num_scenes_each_truth: int) -> None:
         self.__truth_it = iter(truth_iter)
         self.__num_scenes_per_truth = num_scenes_each_truth
 
@@ -132,8 +144,9 @@ def set_light_properties(light_name, light_level: int) -> None:
         rospy.logwarn("Service call failed: %s" % e)
 
 
-def control_pure_pursuit(prcv_state: Tuple[float, float], radius: float = np.inf) -> float:
-    yaw_err, offset = prcv_state
+def control_pure_pursuit(prcv_state: Percept) -> float:
+    yaw_err, offset = prcv_state.yaw_err, prcv_state.offset
+    radius = np.inf if prcv_state.curvature == 0 else 1.0 / prcv_state.curvature
     heading, distance = -yaw_err, -offset
 
     # Let β be the angle between tangent line of curve path and the line from rear axle to look ahead point
@@ -159,8 +172,8 @@ def control_pure_pursuit(prcv_state: Tuple[float, float], radius: float = np.inf
     return angle
 
 
-def control_stanley(prcv_state: Tuple[float, float]) -> float:
-    yaw_err, offset = prcv_state
+def control_stanley(prcv_state: Percept) -> float:
+    yaw_err, offset = prcv_state.yaw_err, prcv_state.offset
     heading, distance = -yaw_err, -offset
 
     # NOTE Convert to front axle assuming the lane is a line

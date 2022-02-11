@@ -3,7 +3,7 @@
 DEVEL_DIR=$HOME/Public/gem_ws/devel
 BAG_DIR=$HOME/Desktop  # Using absolute path is recommended
 DURATION=1h
-TRUTH_FILE=truths_configs/121_truths-evenly_spaced_11x11-pi_12-1.2m.yaml.orig
+TRUTH_FILE=truths_configs/121_truths-evenly_spaced_11x11-1.2m-pi_12.yaml
 
 source ${DEVEL_DIR}/setup.bash
 export ROS_MASTER_URI=http://localhost:61804

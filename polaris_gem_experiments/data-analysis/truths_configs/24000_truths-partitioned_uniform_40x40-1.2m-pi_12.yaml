@@ -1,5 +1,5 @@
 fields:
-  truth: [cte, phi]
+  truth: [cte, psi]
 distribution:
   partioned_uniform:
     partition: [40, 40]

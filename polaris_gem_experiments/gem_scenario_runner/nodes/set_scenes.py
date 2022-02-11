@@ -3,15 +3,13 @@
 """
 Periodically setting new model poses drawn from a uniform distribution for the selected world.
 """
-from typing import Tuple
-
 import numpy as np
 
 import rospy
 from geometry_msgs.msg import Pose, Point
 
 from gem_scenario_runner import euler_to_quat, get_uniform_random_light_level, \
-    LaneDetectScene, TimedResetScene, GenSceneFromTruthBase
+    LaneDetectScene, TimedResetScene, GenSceneFromTruthBase, Percept
 
 
 class GenScenesThreeStraightRoads(GenSceneFromTruthBase):
@@ -29,7 +27,7 @@ class GenScenesThreeStraightRoads(GenSceneFromTruthBase):
         # TODO change according to the new map
         return True
 
-    def _get_scene_from_truth(self, truth: Tuple[float, float]) -> LaneDetectScene:
+    def _get_scene_from_truth(self, truth: Percept) -> LaneDetectScene:
         """ Get a poses for a given ground truth psi and cte
         The samples are drawn first from a discrete choice among three lanes and
         then from a continuous uniform distribution between [LANE_START, LANE_STOP].
@@ -39,14 +37,14 @@ class GenScenesThreeStraightRoads(GenSceneFromTruthBase):
         truth : tuple of float
             Heading angle error in radian and Cross track error range in meter
         """
-        psi, cte = truth
+        cte, psi = truth.offset, truth.yaw_err
         x = np.random.uniform(self.LANE_START, self.LANE_STOP)
         road_y = self.PLOT_SEP * np.random.choice(np.arange(self.PLOT_NUM))
         y = road_y - cte
         z = self.BOT_Z
         yaw = -psi
         rospy.loginfo("Sampled (x, y, yaw) = (%f, %f, %f) " % (x, y, yaw) +
-                      "for ground truth (psi, cte) = (%f, %f)" % (psi, cte))
+                      "for ground truth (d, ψ) = (%f, %f)" % (cte, psi))
         pose = Pose(position=Point(x, y, z),
                     orientation=euler_to_quat(yaw=yaw))
         if not self._check_ground_truth(psi, cte, pose):
@@ -83,7 +81,9 @@ class GenScenesOneCurveRoad(GenSceneFromTruthBase):
     ARC_ANG_LB, ARC_ANG_UB = -np.pi / 2, 0.0  # radian
     ROAD_ARC_RADIUS = 100.0  # meters. The radius of road center line
     L_LANE_ARC_RADIUS = ROAD_ARC_RADIUS - (LANE_MARKER_PTS / 2 + L_LANE_PTS / 2) / METER_TO_PIXEL
+    L_LANE_ARC_CURVATURE = 1 / L_LANE_ARC_RADIUS
     R_LANE_ARC_RADIUS = ROAD_ARC_RADIUS + (LANE_MARKER_PTS / 2 + R_LANE_PTS / 2) / METER_TO_PIXEL
+    R_LANE_ARC_CURVATURE = 1 / R_LANE_ARC_RADIUS
     # endregion
 
     # region Constants to sample initial state
@@ -100,7 +100,7 @@ class GenScenesOneCurveRoad(GenSceneFromTruthBase):
         # TODO change according to the new map
         return True
 
-    def _get_scene_from_truth(self, truth: Tuple[float, float]) -> LaneDetectScene:
+    def _get_scene_from_truth(self, truth: Percept) -> LaneDetectScene:
         """ Get a poses for a given ground truth psi and cte
 
         We uniformly sample an arc_ang in [ARC_ANG_START, ARC_ANG_STOP] to define the closest point to (x, y) on the arc
@@ -120,7 +120,7 @@ class GenScenesOneCurveRoad(GenSceneFromTruthBase):
         truth : tuple of float
             Heading angle error in radian and Cross track error range in meter
         """
-        yaw_err, offset = truth
+        yaw_err, offset = truth.yaw_err, truth.offset
 
         r = self.L_LANE_ARC_RADIUS  # TODO select from lanes?
         arc_ang = np.random.uniform(self.ARC_ANG_START, self.ARC_ANG_STOP)
@@ -128,7 +128,7 @@ class GenScenesOneCurveRoad(GenSceneFromTruthBase):
         z = self.BOT_Z
         yaw = (arc_ang + np.pi / 2) - yaw_err
         rospy.loginfo("Sampled (x, y, yaw) = (%f, %f, %f) " % (x, y, yaw) +
-                      "for ground truth (psi, cte) = (%f, %f)" % (yaw_err, offset))
+                      "for ground truth (d, ψ) = (%f, %f)" % (offset, yaw_err))
         pose = Pose(position=Point(x, y, z),
                     orientation=euler_to_quat(yaw=yaw))
         if not self._check_ground_truth(yaw_err, offset, pose):
@@ -145,13 +145,20 @@ def main():
     model_name = rospy.get_param("~gazebo_model_name")
     light_name = rospy.get_param("~light_name", "sundir")
     reset_period = rospy.get_param("~reset_period")  # second
+    fields = rospy.get_param("~fields")
     truth_list = rospy.get_param("~truth_list", [])
     num_scenes_each_truth = rospy.get_param("~num_scenes_each_truth", 100)
 
+    if "truth" not in fields or fields["truth"] != ["cte", "psi"]:
+        raise ValueError("Unsupported field declaration %s" % fields)
+
     if world_name.endswith("three_100m_straight_roads.world"):
-        scene_generator = GenScenesThreeStraightRoads(truth_list, num_scenes_each_truth)
+        true_percept_list = [Percept(yaw_err=psi, offset=cte, curvature=0.0) for cte, psi in truth_list]
+        scene_generator = GenScenesThreeStraightRoads(true_percept_list, num_scenes_each_truth)
     elif world_name.endswith("one_100m_left_curved_road.world"):
-        scene_generator = GenScenesOneCurveRoad(truth_list, num_scenes_each_truth)
+        true_percept_list = [Percept(yaw_err=psi, offset=cte, curvature=GenScenesOneCurveRoad.L_LANE_ARC_CURVATURE)
+                             for cte, psi in truth_list]
+        scene_generator = GenScenesOneCurveRoad(true_percept_list, num_scenes_each_truth)
     else:
         raise ValueError("Unknown Gazebo world name %s" % world_name)
 

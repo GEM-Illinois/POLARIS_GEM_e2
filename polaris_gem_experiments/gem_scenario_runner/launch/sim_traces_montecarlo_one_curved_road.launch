@@ -9,7 +9,8 @@
 
     <!-- Experiment Setup -->
     <arg name="controller" default="pure_pursuit" />
-    <arg name="num_traces" default="1000" />
+    <arg name="truth_file"
+         default="$(find gem_scenario_runner)/configs/example-5.truths.yaml"/>
     <arg name="max_trace_len" default="100" />
 
     <!-- LaneNet config -->
@@ -37,8 +38,8 @@
             <param name="config_path" value="$(arg config_path)" />
             <param name="weights_path" value="$(arg weights_path)" />
             <param name="out_dir" value="$(arg out_dir)" />
-            <param name="num_traces" value="$(arg num_traces)" />
             <param name="max_trace_len" value="$(arg max_trace_len)" />
+            <rosparam command="load" file="$(arg truth_file)"/>
         </node>
     </group>
 </launch>
