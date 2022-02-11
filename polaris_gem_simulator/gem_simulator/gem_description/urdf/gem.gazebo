@@ -432,7 +432,6 @@
   <gazebo>
      <plugin name="ground_truth" filename="libgazebo_ros_p3d.so">
         <updateRate>30.0</updateRate>
-        <!-- <robotNamespace>$(arg namespace)</robotNamespace> -->
         <frameName>/world</frameName>  <!-- Frame of reference is the global coordinates -->
         <bodyName>base_footprint</bodyName>
         <topicName>base_footprint/odom</topicName>
