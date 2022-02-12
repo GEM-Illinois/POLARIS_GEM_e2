@@ -1,2 +1,5 @@
 *.bag
 *.pickle
+*.mp4
+
+orig/
