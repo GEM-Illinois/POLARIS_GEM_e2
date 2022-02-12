@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import pickle
-from typing import Any, NamedTuple, Tuple
+from typing import Any, NamedTuple, Tuple, List
+import yaml
 
+import numpy as np
 from scipy.spatial.transform import Rotation
 
 from genpy import TVal
@@ -28,8 +30,8 @@ def odom_to_state(msg: Odometry) -> Tuple[float, float, float]:
     return msg.pose.pose.position.x, msg.pose.pose.position.y, yaw
 
 
-def lane_to_percept(msg: SimpleLaneStamped) -> Tuple[float, float]:
-    return msg.lane.offset, msg.lane.yaw_err
+def lane_to_percept(msg: SimpleLaneStamped) -> Tuple[float, float, float]:
+    return msg.lane.offset, msg.lane.yaw_err, msg.lane.curvature
 
 
 def convert_bag_messages(bag: Bag, topic_to_cb):
@@ -67,7 +69,29 @@ def process_bag_file(file_name: str, topic_to_cb):
     return file_name, stamped_state_list, stamped_percept_list
 
 
+def predefined_truths_to_ndarray(truths: List[List[float]]) -> np.ndarray:
+    return np.fromiter((tuple(t) for t in truths),
+                       dtype=[("cte", float), ("psi", float)])
+
+
+def stamped_states_to_ndarray(stamped_states: List[StampedData]) -> np.ndarray:
+    return np.fromiter(((stamp,) + state for stamp, state in stamped_states),
+                       dtype=[("stamp", int), ("x", float), ("y", float), ("yaw", float)])
+
+
+def stamped_percepts_to_ndarray(stamped_percepts: List[StampedData]) -> np.ndarray:
+    return np.fromiter(((stamp,) + percept for stamp, percept in stamped_percepts),
+                       dtype=[("stamp", int), ("cte", float), ("psi", float), ("curvature", float)])
+
+
 def main(argv: Any) -> None:
+    yaml_data = yaml.safe_load(argv.predefined_truths)
+    predefined = yaml_data["truth_list"]
+    distribution = yaml_data["distribution"]
+    fields = yaml_data["fields"]
+
+    assert tuple(fields.get("truth")) == ('cte', "psi")
+
     TOPIC_TO_CB = {
         ODOM_TOPIC: odom_to_state,
         LANE_TOPIC: lane_to_percept
@@ -79,9 +103,15 @@ def main(argv: Any) -> None:
     for file_name, stamped_states, stamped_percepts in file_samples_iter:
         with open("%s.pickle" % file_name, 'wb') as f:
             data_w_header = {
-                "fields": {"state": ('x', 'y', 'yaw'), "percept": ('cte', 'psi')},
-                "stamped_states": stamped_states,
-                "stamped_percepts": stamped_percepts
+                "fields": {
+                    "truth": [("cte", float), ("psi", float)],
+                    "stamped_state": [("stamp", int), ("x", float), ("y", float), ("yaw", float)],
+                    "stamped_percept": [("stamp", int), ("cte", float), ("psi", float), ("curvature", float)]
+                },
+                "distribution": distribution,
+                "init_truths": predefined_truths_to_ndarray(predefined),
+                "stamped_states": stamped_states_to_ndarray(stamped_states),
+                "stamped_percepts": stamped_percepts_to_ndarray(stamped_percepts)
             }
             pickle.dump(data_w_header, f)
 
@@ -90,5 +120,6 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('predefined_truths', type=argparse.FileType('rb'))
     parser.add_argument('bag_file', nargs='+', type=str)
     main(parser.parse_args())

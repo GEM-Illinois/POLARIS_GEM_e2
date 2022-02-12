@@ -1,5 +1,5 @@
 import abc
-from typing import NamedTuple, Iterable, Any
+from typing import NamedTuple, Iterable, Any, Sequence
 
 import numpy as np
 import rospy
@@ -45,6 +45,16 @@ State = NamedTuple("State", [
     ("y", float),
     ("yaw", float)
 ])
+
+
+def state_list_to_ndarray(state_list: Sequence[State]) -> np.ndarray:
+    return np.fromiter(state_list,
+                       dtype=[('x', float), ('y', float), ('yaw', float)])
+
+
+def percept_list_to_ndarray(percept_list: Sequence[Percept]) -> np.ndarray:
+    return np.fromiter(percept_list,
+                       dtype=[('psi', float), ('cte', float), ('curvature', float)])
 
 
 def quat_to_yaw(quat: Quaternion) -> float:

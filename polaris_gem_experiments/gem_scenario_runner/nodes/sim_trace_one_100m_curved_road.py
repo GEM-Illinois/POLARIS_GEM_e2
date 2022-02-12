@@ -29,7 +29,7 @@ from gem_lanenet.lanenet_w_line_fit import LaneNetWLineFit
 from gem_scenario_runner import \
     euler_to_quat, pose_to_xy_yaw, control_pure_pursuit, dynamics, control_stanley, \
     get_uniform_random_light_level, set_light_properties, set_model_pose, pause_physics, unpause_physics, \
-    LaneDetectScene, Percept, State
+    LaneDetectScene, Percept, State, state_list_to_ndarray, percept_list_to_ndarray
 
 # region Constants for the world file
 BOT_Z = -0.11  # meter  # Default elevation of the road
@@ -276,19 +276,23 @@ def main() -> None:
         rospy.loginfo("Compute Next State: %f seconds" % time_usage_dynamics)
         out_path = pathlib.Path(out_dir)
         if out_path.is_dir():
+            data = [(state_list_to_ndarray(state_trace), percept_list_to_ndarray(prcv_trace))
+                    for state_trace, prcv_trace in traces]
             # Save x, y, yaw in case for sanity check
             time_str = time.strftime("%Y-%m-%d-%H-%M-%S")
             out_pickle_name = 'lanenet_%s_sim_traces_%s.xy_yaw.pickle' % (controller, time_str)
             out_pickle = out_path.joinpath(out_pickle_name)
             with out_pickle.open('wb') as f:
-                pickle.dump(traces, f)
+                pickle.dump(data, f)
             # Save ground truth as well as perceived heading and distance
             converted_trace = [([xy_yaw_to_truth(xy_yaw) for xy_yaw in xy_yaw_trace], prcv_trace)
                                for xy_yaw_trace, prcv_trace in traces]
+            data = [(percept_list_to_ndarray(truth_trace), percept_list_to_ndarray(prcv_trace))
+                    for truth_trace, prcv_trace in converted_trace]
             out_pickle_name = 'lanenet_%s_sim_traces_%s.bag.pickle' % (controller, time_str)
             out_pickle = out_path.joinpath(out_pickle_name)
             with out_pickle.open('wb') as f:
-                pickle.dump(converted_trace, f)
+                pickle.dump(data, f)
 
 
 if __name__ == "__main__":
