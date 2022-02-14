@@ -1,7 +1,7 @@
 fields:
   truth: [cte, psi]
 distribution:
-  partioned_uniform:
+  partitioned_uniform:
     partition: [40, 40]
     lb: [-1.2, -0.2617993877991494]  # [-1.2 meter, -pi/12 rad]
     ub: [1.2, 0.2617993877991494]  # [1.2 meter, pi/12 rad]
