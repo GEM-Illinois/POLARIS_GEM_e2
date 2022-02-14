@@ -100,10 +100,10 @@ def main(argv) -> None:
     sec_start = argv.start  # second
     sec_stop = argv.stop  # second
 
-    out_name_modifier = ".processed-%s-%s" % (str(sec_start).zfill(3), str(sec_stop).zfill(3))
-
     in_bag_name = argv.bag_file
     in_bag_path = pathlib.Path(in_bag_name)
+
+    out_name_modifier = ".apply_lanenet-%s-%s" % (str(sec_start).zfill(3), str(sec_stop).zfill(3))
     out_bag_name = argv.output if argv.output \
         else in_bag_path.with_name(in_bag_path.stem + out_name_modifier + in_bag_path.suffix).as_posix()
 
