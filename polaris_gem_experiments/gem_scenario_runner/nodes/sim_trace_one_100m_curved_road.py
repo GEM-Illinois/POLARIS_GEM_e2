@@ -289,7 +289,7 @@ def main() -> None:
                                for xy_yaw_trace, prcv_trace in traces]
             data = [(percept_list_to_ndarray(truth_trace), percept_list_to_ndarray(prcv_trace))
                     for truth_trace, prcv_trace in converted_trace]
-            out_pickle_name = 'lanenet_%s_sim_traces_%s.bag.pickle' % (controller, time_str)
+            out_pickle_name = 'lanenet_%s_sim_traces_%s.psi_cte.pickle' % (controller, time_str)
             out_pickle = out_path.joinpath(out_pickle_name)
             with out_pickle.open('wb') as f:
                 pickle.dump(data, f)
