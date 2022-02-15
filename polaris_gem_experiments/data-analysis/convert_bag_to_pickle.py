@@ -86,6 +86,7 @@ def stamped_percepts_to_ndarray(stamped_percepts: List[StampedData]) -> np.ndarr
 
 def main(argv: Any) -> None:
     yaml_data = yaml.safe_load(argv.predefined_truths)
+    scene = yaml_data["scene"]
     predefined = yaml_data["truth_list"]
     distribution = yaml_data["distribution"]
     fields = yaml_data["fields"]
@@ -103,6 +104,7 @@ def main(argv: Any) -> None:
     for file_name, stamped_states, stamped_percepts in file_samples_iter:
         with open("%s.pickle" % file_name, 'wb') as f:
             data_w_header = {
+                "scene": scene,
                 "fields": {
                     "truth": [("cte", float), ("psi", float)],
                     "stamped_state": [("stamp", int), ("x", float), ("y", float), ("yaw", float)],
