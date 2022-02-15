@@ -42,29 +42,27 @@ def gen_evenly_spaced_truths(
 
 def main():
     num_truths = 800  # type: int
-    distribution = "uniform_partition"
+    distribution = "partitioned_uniform"
     pi_div = 12  # type: int
     psi_max, cte_max = np.pi/pi_div, 1.2
     psi_min, cte_min = -psi_max, -cte_max
 
     if distribution == "truncated_normal":
+        num_psi_parts, num_cte_parts = None, None
         truth_list = gen_truncated_normal_truths(psi_range=(psi_min, psi_max),
                                                  cte_range=(cte_min, cte_max),
                                                  num_truths=num_truths)
-        output_file_name = "%d_truths-%s-pi_%d-%.1fm.yaml" % (num_truths, distribution, pi_div, cte_max)
     elif distribution == "evenly_spaced":
-        num_psi, num_cte = 11, 11
-        assert num_psi*num_cte == num_truths
+        num_psi_parts, num_cte_parts = 11, 11
+        assert num_psi_parts*num_cte_parts == num_truths
         truth_list = gen_evenly_spaced_truths(psi_range=(psi_min, psi_max),
                                               cte_range=(cte_min, cte_max),
-                                              num_psi=num_psi, num_cte=num_cte)
-        output_file_name = "%d_truths-%s_%dx%d-pi_%d-%.1fm.yaml" \
-                           % (num_truths, distribution, num_psi, num_cte, pi_div, cte_max)
+                                              num_psi=num_psi_parts, num_cte=num_cte_parts)
     elif distribution == "uniform":
+        num_psi_parts, num_cte_parts = None, None
         truth_list = gen_uniform_truths(psi_range=(psi_min, psi_max),
                                         cte_range=(cte_min, cte_max),
                                         num_truths=num_truths)
-        output_file_name = "%d_truths-%s-pi_%d-%.1fm.yaml" % (num_truths, distribution, pi_div, cte_max)
     elif distribution == "partitioned_uniform":
         num_psi_parts, num_cte_parts = 20, 4
         assert num_truths % (num_psi_parts*num_cte_parts) == 0
@@ -82,19 +80,30 @@ def main():
                 truth_list.extend(gen_uniform_truths(psi_range=psi_range,
                                                      cte_range=cte_range,
                                                      num_truths=num_truths_per_part))
-        output_file_name = "%d_truths-%s_%dx%d-pi_%d-%.3fm.yaml" % (num_truths, distribution,
-                                                                    num_psi_parts, num_cte_parts,
-                                                                    pi_div, cte_max)
     else:
         raise NotImplementedError("Unsupported probability distribution %s" % distribution)
 
     # NOTE Swap the order from ["psi", "cte"] to ["cte", "psi"]
     truth_list = [[v2, v1] for v1, v2 in truth_list]
 
+    assert (num_psi_parts is None) == (num_cte_parts is None)
+
+    if num_psi_parts is None and num_cte_parts is None:
+        distr_str = str(distribution)
+    else:
+        distr_str = f"{distribution}_{num_cte_parts}x{num_psi_parts}"
+    output_file_name = f"{num_truths}_truths-{distr_str}-{cte_max}m-pi_{pi_div}.yaml"
+
     print("Saving generated ground truths to file '%s'" % output_file_name)
     with open(output_file_name, "w") as out_file:
         yaml.safe_dump({
             "fields": {"truth": ["cte", "psi"]},
+            "distribution": {
+                str(distribution): {
+                    "lb": [cte_min, psi_min],
+                    "ub": [cte_max, psi_max],
+                }
+            },
             "truth_list": truth_list}, out_file, default_flow_style=None)
 
 
