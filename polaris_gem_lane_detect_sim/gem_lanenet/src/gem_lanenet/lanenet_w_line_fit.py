@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -153,6 +153,8 @@ def _find_lane_edge_pixels(nonzero_pixels: np.ndarray,
 def _find_current_lane_pixels(binary_birdeye_img) -> Tuple[np.ndarray, np.ndarray]:
     """ Find the pixels of the two lane edges for the current lane on the
         binary bird's eye view image
+
+        FIXME: This function is currently not used.
 
     Parameters
     ----------
@@ -334,6 +336,52 @@ class LaneNetWLineFit:
         return mask, lane_chords
 
     def detect(self, src_img) -> Tuple[Optional[Polynomial], np.ndarray]:
+        """ Detect the center line of the lane
+
+            Parameters
+            ----------
+            src_img
+                Image from camera
+
+            Returns
+            -------
+            center_line:
+                A polynomial representing the center line of the lane w.r.t the base_footprint.
+                It may be None to represent that no lane is detected.
+                Note that by convention, x-axis is the forward direction and y-axis is to the left
+                w.r.t ego vehicle for the resulting center line.
+            debug_image:
+                An annotated image for debugging.
+                If self._debug is False, only the binary bird's eye view is returned.
+        """
+        edge_line_seq, debug_image = self.detect_all_lanes(src_img)
+
+        left_line, right_line = None, None
+        left_line_y_diff, right_line_y_diff = -METER_PER_PIXEL*(WARPED_IMG_W//2), METER_PER_PIXEL*(WARPED_IMG_W//2)
+        # Extrapolate the edge line and find two lanes closest to the lookahead pixel (W//2, H//2)
+        for edge_line in edge_line_seq:
+            yaw_err = np.arctan(edge_line.convert().coef[1])
+            if abs(yaw_err) > np.pi / 4:
+                continue  # Ignore lines with too large yaw error
+
+            y_diff = edge_line(METER_PER_PIXEL*WARPED_IMG_H/2) - 0.0
+            if left_line_y_diff < y_diff < 0:
+                left_line = edge_line
+                left_line_y_diff = y_diff
+            elif 0 < y_diff < right_line_y_diff:
+                right_line = edge_line
+                right_line_y_diff = y_diff
+            elif y_diff == 0:
+                # TODO raise warning
+                continue
+
+        if left_line is None or right_line is None:
+            center_line = None
+        else:
+            center_line = (left_line + right_line) / 2
+        return center_line, debug_image
+
+    def detect_all_lanes(self, src_img) -> Tuple[List[Polynomial], np.ndarray]:
         """ Detect and return lane edges
 
         Parameters
@@ -343,7 +391,7 @@ class LaneNetWLineFit:
 
         Returns
         -------
-        line_sequence
+        edge_line_seq:
             A sequence of polynomials representing the detected lane edges w.r.t the base_footprint.
             It may include edges of multiple lanes or no lane at all.
             Note that by convention, x-axis is the forward direction and y-axis is to the left
@@ -376,32 +424,8 @@ class LaneNetWLineFit:
                                        deg=1, domain=[0, METER_PER_PIXEL*WARPED_IMG_H])  # type: Polynomial
             edge_line_seq.append(edge_line)
 
-        left_line, right_line = None, None
-        left_line_y_diff, right_line_y_diff = -METER_PER_PIXEL*(WARPED_IMG_W//2), METER_PER_PIXEL*(WARPED_IMG_W//2)
-        # Extrapolate the edge line and find two lanes closest to the lookahead pixel (W//2, H//2)
-        for edge_line in edge_line_seq:
-            yaw_err = np.arctan(edge_line.convert().coef[1])
-            if abs(yaw_err) > np.pi / 4:
-                continue  # Ignore lines with too large yaw error
-
-            y_diff = edge_line(METER_PER_PIXEL*WARPED_IMG_H/2) - 0.0
-            if left_line_y_diff < y_diff < 0:
-                left_line = edge_line
-                left_line_y_diff = y_diff
-            elif 0 < y_diff < right_line_y_diff:
-                right_line = edge_line
-                right_line_y_diff = y_diff
-            elif y_diff == 0:
-                # TODO raise warning
-                continue
-
-        if left_line is None or right_line is None:
-            center_line = None
-        else:
-            center_line = (left_line + right_line) / 2
-
         if not self._debug:
-            return center_line, binary_birdeye_img
+            return edge_line_seq, binary_birdeye_img
         # else:  # For DEBUGGING
         # TODO Check unwarped image is close to binary_seg_result
         colored_birdeye_img = cv2.cvtColor(binary_birdeye_img, cv2.COLOR_GRAY2RGB)
@@ -441,7 +465,7 @@ class LaneNetWLineFit:
 
         # Build final image for debugging
         debug_image = np.vstack((cropped_birdeye_img, layered_image))
-        return center_line, debug_image
+        return edge_line_seq, debug_image
 
     def close(self) -> None:
         self._sess.close()  # TODO add support for `with` statement using context manager
