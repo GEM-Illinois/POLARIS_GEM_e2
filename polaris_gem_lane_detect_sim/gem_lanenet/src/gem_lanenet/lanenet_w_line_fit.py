@@ -6,7 +6,6 @@ from numpy.polynomial.polynomial import Polynomial
 import tensorflow as tf
 from lanenet.lanenet_model import lanenet, lanenet_postprocess
 from lanenet.parse_config_utils import Config
-from gem_lanenet.line_fit import Line
 
 WARPED_IMG_W = 16*61  # pixels
 WARPED_IMG_H = 9*61  # pixels
@@ -217,20 +216,6 @@ def _find_all_lanes_pixels(binary_birdeye_img,
     return tuple(ret)
 
 
-def _convert_poly_pixel_to_pos(line: Polynomial) -> Polynomial:
-    c0, c1 = line.convert().coef[:2]
-    # Transform the line with
-    #  x = -METER_PER_PIXEL*(v - WARPED_IMG_H)
-    #  y = -METER_PER_PIXEL*(u - WARPED_IMG_W//2)
-    #  where x-axis points toward vehicle's forward direction and y-axis to the left
-    # Given u = c0 + c1*v, the transformed line is:
-    #  y = METER_PER_PIXEL*(WARPED_IMG_W//2 - (c0 + c1*WARPED_IMG_H)) + c1*x
-    c0_p = METER_PER_PIXEL * (WARPED_IMG_W // 2 - (c0 + c1 * WARPED_IMG_H))
-    c1_p = c1
-    line_base_footprint = Polynomial([c0_p, c1_p])
-    return line_base_footprint
-
-
 class LaneNetWLineFit:
     M, M_INV = get_perspective_transform(SRC_DST_MAP)
 
@@ -245,10 +230,6 @@ class LaneNetWLineFit:
         self._init_lanenet(weights_path, use_gpu)
         self._cluster = lanenet_postprocess._LaneNetCluster(cfg=self._cfg)
         self._debug = debug
-
-        self.detected = False
-        self.left_line = Line(n=window_size)
-        self.right_line = Line(n=window_size)
 
     def _init_lanenet(self, weights_path: str, use_gpu: bool) -> None:
         """ Initialize the TensorFlow model """
@@ -380,37 +361,44 @@ class LaneNetWLineFit:
         edge_pixels_seq = _find_all_lanes_pixels(binary_birdeye_img)
         edge_line_seq = []
         for lane_pixels in edge_pixels_seq:
-            # Fit a second order polynomial curve to the pixel coordinates for each lane edge
             # Note that v is the x-axis for fitting to follow the right hand rule
             # TODO fit all lanes to parallel curves instead of fitting curves separately
             u_arr, v_arr = lane_pixels.T
-            edge_line = Polynomial.fit(v_arr, u_arr, deg=1, domain=[0, WARPED_IMG_H])  # type: Polynomial
+            # Transform the line with
+            #  x = -METER_PER_PIXEL*(v - WARPED_IMG_H)
+            #  y = -METER_PER_PIXEL*(u - WARPED_IMG_W//2)
+            #  where x-axis points toward vehicle's forward direction and y-axis to the left
+            x_arr = -METER_PER_PIXEL*(v_arr - WARPED_IMG_H)
+            y_arr = -METER_PER_PIXEL*(u_arr - WARPED_IMG_W // 2)
+
+            # Fit a second order polynomial curve to the pixel coordinates for each lane edge
+            edge_line = Polynomial.fit(x_arr, y_arr,
+                                       deg=1, domain=[0, METER_PER_PIXEL*WARPED_IMG_H])  # type: Polynomial
             edge_line_seq.append(edge_line)
 
         left_line, right_line = None, None
-        left_line_u_diff, right_line_u_diff = -WARPED_IMG_W//2, WARPED_IMG_W//2
-        # Extrapolate the edge line and find two lanes closest to the lookahead point (W//2, H//2)
+        left_line_y_diff, right_line_y_diff = -METER_PER_PIXEL*(WARPED_IMG_W//2), METER_PER_PIXEL*(WARPED_IMG_W//2)
+        # Extrapolate the edge line and find two lanes closest to the lookahead pixel (W//2, H//2)
         for edge_line in edge_line_seq:
             yaw_err = np.arctan(edge_line.convert().coef[1])
             if abs(yaw_err) > np.pi / 4:
                 continue  # Ignore lines with too large yaw error
 
-            u_diff = edge_line(WARPED_IMG_H//2) - WARPED_IMG_W//2
-            if left_line_u_diff < u_diff < 0:
+            y_diff = edge_line(METER_PER_PIXEL*WARPED_IMG_H/2) - 0.0
+            if left_line_y_diff < y_diff < 0:
                 left_line = edge_line
-                left_line_u_diff = u_diff
-            elif 0 < u_diff < right_line_u_diff:
+                left_line_y_diff = y_diff
+            elif 0 < y_diff < right_line_y_diff:
                 right_line = edge_line
-                right_line_u_diff = u_diff
-            elif u_diff == 0:
+                right_line_y_diff = y_diff
+            elif y_diff == 0:
                 # TODO raise warning
                 continue
 
         if left_line is None or right_line is None:
             center_line = None
         else:
-            center_line_pixel = (left_line + right_line) / 2
-            center_line = _convert_poly_pixel_to_pos(center_line_pixel)
+            center_line = (left_line + right_line) / 2
 
         if not self._debug:
             return center_line, binary_birdeye_img
@@ -431,7 +419,9 @@ class LaneNetWLineFit:
         v_arr = np.arange(WARPED_IMG_H, dtype=np.int32)
         poly_line_seq = []
         for edge_line in edge_line_seq:
-            u_arr = edge_line(v_arr).astype(np.int32)
+            x_arr = -METER_PER_PIXEL*(v_arr - WARPED_IMG_H)
+            y_arr = edge_line(x_arr)
+            u_arr = (y_arr / -METER_PER_PIXEL + WARPED_IMG_W // 2).astype(np.int32)
             poly_line = np.vstack((u_arr, v_arr), ).T
             poly_line_seq.append(poly_line)
 
