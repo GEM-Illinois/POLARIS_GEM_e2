@@ -17,7 +17,7 @@ def gen_truncated_normal_truths(
         num_truths: int) -> List[List[float]]:
     psi_min, psi_max = psi_range
     cte_min, cte_max = cte_range
-    my_mean, my_std = np.zeros(2), 0.1*np.ones(2)
+    my_mean, my_std = np.zeros(2), np.array([0.05, 0.4])
     myclip_a, myclip_b = np.array([psi_min, cte_min]), np.array([psi_max, cte_max])
     a, b = (myclip_a - my_mean) / my_std, (myclip_b - my_mean) / my_std
     return truncnorm.rvs(a, b, size=(num_truths, 2), loc=my_mean, scale=my_std).tolist()
