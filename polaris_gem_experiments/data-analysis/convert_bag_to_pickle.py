@@ -111,7 +111,7 @@ def main(argv: Any) -> None:
                     "stamped_percept": [("stamp", int), ("cte", float), ("psi", float), ("curvature", float)]
                 },
                 "distribution": distribution,
-                "init_truths": predefined_truths_to_ndarray(predefined),
+                "truth_list": predefined_truths_to_ndarray(predefined),
                 "stamped_states": stamped_states_to_ndarray(stamped_states),
                 "stamped_percepts": stamped_percepts_to_ndarray(stamped_percepts)
             }
