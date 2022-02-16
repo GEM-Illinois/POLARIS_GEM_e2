@@ -23,14 +23,15 @@
 #
 # Message Fields:
 
-float32 yaw_err      # estimated heading error (rad in [-pi, pi]).
+float32 yaw_err      # estimated heading error (rad in [-pi/2, pi/2]).
 float32 offset       # estimated lateral offset, i.e., cross track error (m).
-float32 curvature    # estimated curvature (m^-1). The value is always >=0.
+float32 curvature    # estimated curvature (m^-1).
 
 # Note 1: To avoid confusions in different definitions of signed curvature, we
-# use unsigned curvature. Hence, left turn and right turn are distinguished by
-# `yaw_err`, that is, `yaw_err` in [-pi/2, pi/2] is left turn, and `yaw_err` in
-# [-pi, -pi/2] or [pi/2, pi] is right turn by definition.
+# consider a quadratic function as an example. Since *x-axis* is the forward
+# direction and *y-axis* is the left hand of the ego-vehicle, a left curve will
+# be a quadratic function with a positive second order term , and hence has a
+# positive curvature. Conversely, a right curve has a negative curvature.
 #
 # Note 2: or pure pursuit controller, the reference point is defined on the
 # center of the rear axle of the ego vehicle. For the Stanley controller, the
