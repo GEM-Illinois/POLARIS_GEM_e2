@@ -3,6 +3,11 @@ from typing import Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 from numpy.polynomial.polynomial import Polynomial
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures, MinMaxScaler
+from sklearn.linear_model import LinearRegression
+
 import tensorflow as tf
 from lanenet.lanenet_model import lanenet, lanenet_postprocess
 from lanenet.parse_config_utils import Config
@@ -358,13 +363,14 @@ class LaneNetWLineFit:
 
         left_line, right_line = None, None
         left_line_y_diff, right_line_y_diff = -METER_PER_PIXEL*(WARPED_IMG_W//2), METER_PER_PIXEL*(WARPED_IMG_W//2)
-        # Extrapolate the edge line and find two lanes closest to the lookahead pixel (W//2, H//2)
+        # Extrapolate the edge line and find two lanes closest to the ego car, that is, (x, y) = (0.0, 0.0)
         for edge_line in edge_line_seq:
-            yaw_err = np.arctan(edge_line.convert().coef[1])
-            if abs(yaw_err) > np.pi / 4:
+            edge_poly_der = edge_line.deriv(m=1)
+            yaw_err = np.arctan(edge_poly_der(0.0))
+            if abs(yaw_err) > np.pi / 3:
                 continue  # Ignore lines with too large yaw error
 
-            y_diff = edge_line(METER_PER_PIXEL*WARPED_IMG_H/2) - 0.0
+            y_diff = edge_line(0.0) - 0.0
             if left_line_y_diff < y_diff < 0:
                 left_line = edge_line
                 left_line_y_diff = y_diff
@@ -381,13 +387,15 @@ class LaneNetWLineFit:
             center_line = (left_line + right_line) / 2
         return center_line, debug_image
 
-    def detect_all_lanes(self, src_img) -> Tuple[List[Polynomial], np.ndarray]:
+    def detect_all_lanes(self, src_img, poly_deg: int = 2) -> Tuple[List[Polynomial], np.ndarray]:
         """ Detect and return lane edges
 
         Parameters
         ----------
         src_img
             Image from camera
+        poly_deg
+            The order of polynomial for curve fitting
 
         Returns
         -------
@@ -407,25 +415,61 @@ class LaneNetWLineFit:
         binary_birdeye_img = self._birdeye_view(binary_seg_result, src_img_size)
 
         edge_pixels_seq = _find_all_lanes_pixels(binary_birdeye_img)
-        edge_line_seq = []
-        for lane_pixels in edge_pixels_seq:
-            # Note that v is the x-axis for fitting to follow the right hand rule
-            # TODO fit all lanes to parallel curves instead of fitting curves separately
-            u_arr, v_arr = lane_pixels.T
-            # Transform the line with
-            #  x = -METER_PER_PIXEL*(v - WARPED_IMG_H)
-            #  y = -METER_PER_PIXEL*(u - WARPED_IMG_W//2)
-            #  where x-axis points toward vehicle's forward direction and y-axis to the left
-            x_arr = -METER_PER_PIXEL*(v_arr - WARPED_IMG_H)
-            y_arr = -METER_PER_PIXEL*(u_arr - WARPED_IMG_W // 2)
+        if len(edge_pixels_seq) == 0:
+            return [], cv2.cvtColor(binary_birdeye_img, cv2.COLOR_GRAY2RGB)
 
-            # Fit a second order polynomial curve to the pixel coordinates for each lane edge
-            edge_line = Polynomial.fit(x_arr, y_arr,
-                                       deg=1, domain=[0, METER_PER_PIXEL*WARPED_IMG_H])  # type: Polynomial
+        # Fit all lanes to parallel curves
+        uv_arr_list = [lane_pixels.T for lane_pixels in edge_pixels_seq]
+        u_arr, v_arr = np.hstack(uv_arr_list)
+        # Note that v is the x-axis for fitting to follow the right-hand rule
+        # Transform the line with
+        #  x = -METER_PER_PIXEL*(v - WARPED_IMG_H)
+        #  y = -METER_PER_PIXEL*(u - WARPED_IMG_W//2)
+        #  where x-axis points toward vehicle's forward direction and y-axis to the left
+        x_arr = -METER_PER_PIXEL*(v_arr - WARPED_IMG_H)
+        y_arr = -METER_PER_PIXEL*(u_arr - WARPED_IMG_W // 2)
+
+        # Fit parallel polynomial curves to the pixel coordinates for all lane edges
+        # by introducing one hot variable for the intercept of each lane polynomial
+        i_arr_list = [np.full(len(lane_pixels), lane_idx, dtype=int)
+                      for lane_idx, lane_pixels in enumerate(edge_pixels_seq)]
+        i_arr = np.concatenate(i_arr_list)
+        feature_arr = np.vstack((i_arr, x_arr)).T
+
+        x_preprocess = Pipeline([
+            ("scaler", MinMaxScaler((-1.0, 1.0))),  # Scale to [-1, 1] to match the default domain of Polynomial class
+            # Generate higher order features for x
+            ("polynomial", PolynomialFeatures(poly_deg, include_bias=False))
+        ])
+        col_tran = ColumnTransformer(
+            transformers=[
+                ("onehot", OneHotEncoder(), [0]),  # Encode lane id with one hot variables
+                ("x", x_preprocess, [1]),
+            ]
+        )
+        pipe = Pipeline([
+            ("column_trans", col_tran),
+            ("regressor", LinearRegression(fit_intercept=False))
+        ])
+
+        # Apply fitting
+        pipe.fit(X=feature_arr, y=y_arr)
+        assert len(pipe["regressor"].coef_) == len(edge_pixels_seq) + poly_deg
+
+        scaler = pipe["column_trans"].named_transformers_['x']["scaler"]
+        c0, c1 = scaler.min_.squeeze(), scaler.scale_.squeeze()
+        scaler_poly = Polynomial(coef=[c0, c1])
+
+        edge_line_seq = []
+        for lane_id in range(len(edge_pixels_seq)):
+            indices = [lane_id] + list(range(-poly_deg, 0))
+            coef = pipe["regressor"].coef_[indices]
+            scaled_edge_line = Polynomial(coef=coef)  # type: Polynomial
+            edge_line = scaled_edge_line(scaler_poly)
             edge_line_seq.append(edge_line)
 
         if not self._debug:
-            return edge_line_seq, binary_birdeye_img
+            return edge_line_seq, cv2.cvtColor(binary_birdeye_img, cv2.COLOR_GRAY2RGB)
         # else:  # For DEBUGGING
         # TODO Check unwarped image is close to binary_seg_result
         colored_birdeye_img = cv2.cvtColor(binary_birdeye_img, cv2.COLOR_GRAY2RGB)
