@@ -23,7 +23,7 @@ import cv_bridge
 from geometry_msgs.msg import Pose, Point
 from sensor_msgs.msg import Image
 import rospy
-from gem_lanenet.lanenet_w_line_fit import LaneNetWLineFit
+from gem_lanenet.lanenet_w_line_fit import LaneNetWLineFit, center_line_to_simple_lane
 
 
 from gem_scenario_runner import \
@@ -167,17 +167,11 @@ class ResetPose:
             rospy.logwarn("Cannot infer the lane center line in the current image. Skip.")
             return Percept(np.nan, np.nan, np.nan)
 
-        # calculate error w.r.t the chosen frame of reference of the vehicle (ego view).
-        # NOTE coefficients are in the order of y = c[0] + c[1]*x (+ ... + c[n]*x^n)
-        # where x-axis is the forward direction of the ego vehicle
-        yaw_err = np.arctan(center_line.convert().coef[1])
-
-        # Calculate the offset as the distance from the chosen frame to lane center line
         # NOTE In this simulation set up we always assume the perception is w.r.t rear_axle
         # base_footprint or base_link is the origin (0.0, 0.0)
-        y_diff = center_line(0.0) - 0.0
-        offset = y_diff * np.cos(yaw_err)
-        return Percept(yaw_err=yaw_err, offset=offset, curvature=L_LANE_ARC_CURVATURE)
+        yaw_err, offset, curvature = center_line_to_simple_lane(center_line, (0.0, 0.0))
+
+        return Percept(yaw_err=yaw_err, offset=offset, curvature=curvature)
 
 
 class ImageBuffer:

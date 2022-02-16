@@ -58,6 +58,26 @@ SRC_DST_MAP = {
     (1100, 457): (670, 365)}
 
 
+def center_line_to_simple_lane(
+        center_line: Polynomial,
+        ref_pos: Tuple[float, float]) -> Tuple[float, float, float]:
+    x_0, y_0 = ref_pos
+
+    d_f = center_line.deriv(m=1)
+    yaw_err = np.arctan(d_f(x_0))
+    y_diff = center_line(x_0) - y_0
+    # Calculate the offset as the distance from the reference position to lane center line
+    offset = y_diff * np.cos(yaw_err)
+
+    # Curvature for y=f(x) is computed as
+    #    κ(x) = |f''(x)| / (1 + f'(x)**2)**1.5
+    # NOTE coefficients are in the order of y = c[0] + c[1]*x (+ ... + c[n]*x^n)
+    # where x-axis is the forward direction of the ego vehicle
+    d2_f = center_line.deriv(m=2)
+    curvature = d2_f(x_0) / (1 + d_f(x_0) ** 2) ** 1.5
+    return yaw_err, offset, curvature
+
+
 def get_perspective_transform(src_dst_map: Dict[Tuple[int, int], Tuple[int, int]]) \
         -> Tuple[np.ndarray, np.ndarray]:
     """ Compute perspective transformation matrices for converting images to

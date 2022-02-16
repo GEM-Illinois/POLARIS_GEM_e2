@@ -12,7 +12,7 @@ import rosbag
 import rospkg
 from sensor_msgs.msg import CompressedImage
 
-from gem_lanenet.lanenet_w_line_fit import LaneNetWLineFit
+from gem_lanenet.lanenet_w_line_fit import LaneNetWLineFit, center_line_to_simple_lane
 from gem_lane_detect_msgs.msg import SimpleLane, SimpleLaneStamped
 
 CAM_IMG_TOPIC = "front_single_camera/image_raw/compressed"
@@ -45,19 +45,12 @@ class ImageToLane:
             self.skip_count += 1
             return SimpleLaneStamped(header=msg.header,
                                      lane=SimpleLane(np.nan, np.nan, np.nan))
-
-        # calculate error w.r.t the chosen frame of reference of the vehicle (ego view).
-        # NOTE coefficients are in the order of y = c[0] + c[1]*x (+ ... + c[n]*x^n)
-        # where x-axis is the forward direction of the ego vehicle
-        yaw_err = np.arctan(center_line.convert().coef[1])
-
-        # Calculate the offset as the distance from base_footprint to lane center line
-        # NOTE the conversion to front wheel axle as reference is done in postprocessing
+        # NOTE In this simulation set up we always assume the perception is w.r.t rear_axle
         # base_footprint or base_link is the origin (0.0, 0.0)
-        y_diff = center_line(0.0) - 0.0
-        offset = y_diff * np.cos(yaw_err)
+        yaw_err, offset, curvature = center_line_to_simple_lane(center_line, (0.0, 0.0))
+
         ret_msg = SimpleLaneStamped(header=msg.header,
-                                    lane=SimpleLane(yaw_err, offset, 0.0))
+                                    lane=SimpleLane(yaw_err, offset, curvature))
         ret_msg.header.frame_id = "base_footprint"
         return ret_msg
 

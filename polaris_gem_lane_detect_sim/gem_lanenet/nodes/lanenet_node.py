@@ -11,7 +11,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
 from gem_lane_detect_msgs.msg import SimpleLaneStamped
-from gem_lanenet.lanenet_w_line_fit import LaneNetWLineFit
+from gem_lanenet.lanenet_w_line_fit import LaneNetWLineFit, center_line_to_simple_lane
 
 
 class LaneNetLaneDetector:
@@ -43,25 +43,18 @@ class LaneNetLaneDetector:
                 return
 
             # calculate error w.r.t the chosen frame of reference of the vehicle (ego view).
-            # NOTE coefficients are in the order of y = c[0] + c[1]*x (+ ... + c[n]*x^n)
-            # where x-axis is the forward direction of the ego vehicle
-            yaw_err = np.arctan(center_line.convert().coef[1])
-
-            # Calculate the offset as the distance from the chosen frame to lane center line
             if self._frame_id in ["base_footprint", "base_link"]:
                 # base_footprint or base_link is the origin (0.0, 0.0)
-                y_diff = center_line(0.0) - 0.0
+                x_0, y_0 = 0.0, 0.0
             elif self._frame_id == "front_wheel_axle":
                 # front_wheel_axle is assumed at (WHEEL_BASE, 0.0) in meters.
-                y_diff = center_line(self.WHEEL_BASE) - 0.0
+                x_0, y_0 = self.WHEEL_BASE, 0.0
             else:
                 rospy.logwarn(
                     "Unsupported frame_id %s for computing cross track error. " % self._frame_id
                     + "Skipping.")
                 return
-            offset = y_diff * np.cos(yaw_err)
-
-            curvature = 0.0  # Using line hence the curvature is 0
+            yaw_err, offset, curvature = center_line_to_simple_lane(center_line, (x_0, y_0))
 
             lane_stamped_msg = SimpleLaneStamped()
             lane_stamped_msg.header.stamp = rospy.Time.now()
@@ -77,7 +70,10 @@ class LaneNetLaneDetector:
                 annotated_image = cv2.putText(annotated_image, label_str, (30, 40), 0, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
                 label_str = 'Lane center offset from vehicle: %.1f m' % offset
-                annotated_image = cv2.putText(annotated_image, label_str, (30, 70), 0, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                annotated_image = cv2.putText(annotated_image, label_str, (30, 65), 0, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
+                label_str = 'Curvature: %.3f m^-1' % curvature
+                annotated_image = cv2.putText(annotated_image, label_str, (30, 90), 0, 1, (255, 255, 255), 2, cv2.LINE_AA)
                 annotated_image_msg = self._bridge.cv2_to_imgmsg(annotated_image, '8UC3')
                 self._pub_annotated_img.publish(annotated_image_msg)
 
